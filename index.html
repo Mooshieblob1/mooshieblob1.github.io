@@ -5,40 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mooshieblob</title>
     <link href="./output.css" rel="stylesheet" />
+    <!-- Tailwind CSS CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
   </head>
   <!DOCTYPE html>
   <html>
     <head>
-        <title>Mooshieblob</title>
-        <link rel="stylesheet" href="assets/css/style.css" />
-      </head>
-      <body class="back-row-toggle splat-toggle">
-        <div class="clock" id="clock"></div>
-        <div class="social-links">
-          <img
-            src="assets/images/bloblogo.webp"
-            alt=""
-            class="social-logo"
-          />
-          <div class="social-icons">
-            <a
-              href="https://safe.aibooru.online/posts?tags=user%3ABlob"
-              target="_blank"
-              rel="noopener"
-            >
-              <img src="assets/icons/aibooru.svg" alt="AIBooru" />
-            </a>
-            <a href="https://x.com/mooshieblob" target="_blank" rel="noopener">
-              <img src="assets/icons/x.svg" alt="X" class="social-icon" />
-            </a>
-            <a href="https://github.com/Mooshieblob1/" target="_blank" rel="noopener">
-              <img src="assets/icons/github.svg" alt="Github" class="social-icon" />
-            </a>
-          </div>
+      <title>Mooshieblob</title>
+      <link rel="stylesheet" href="assets/css/style.css" />
+    </head>
+    <body class="back-row-toggle splat-toggle">
+      <nav class="bg-transparent p-4 fixed top-0 right-0 w-full">
+        <div class="container mx-auto flex justify-end items-center">
+          <a
+            href="https://blog.mooshieblob.com"
+            class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300"
+          >
+            Blog
+          </a>
         </div>
-        <div class="rain front-row"></div>
-        <div class="rain back-row"></div>
-        <img src="assets/images/bg.webp" id="bg_girl" alt="Background Image" />
+      </nav>
+      <div class="clock" id="clock"></div>
+      <div class="social-links flex flex-col items-center">
+        <img src="assets/images/bloblogo.webp" alt="" class="social-logo" />
+        <div class="social-icons">
+          <a
+            href="https://safe.aibooru.online/posts?tags=user%3ABlob"
+            target="_blank"
+            rel="noopener"
+          >
+            <img src="assets/icons/aibooru.svg" alt="AIBooru" />
+          </a>
+          <a href="https://x.com/mooshieblob" target="_blank" rel="noopener">
+            <img src="assets/icons/x.svg" alt="X" class="social-icon" />
+          </a>
+          <a
+            href="https://github.com/Mooshieblob1/"
+            target="_blank"
+            rel="noopener"
+          >
+            <img
+              src="assets/icons/github.svg"
+              alt="Github"
+              class="social-icon"
+            />
+          </a>
+        </div>
+      </div>
+      <div class="rain front-row"></div>
+      <div class="rain back-row"></div>
+      <img src="assets/images/bg.webp" id="bg_girl" alt="Background Image" />
       <footer>
         <div class="footer-text">
           <span>&copy; 2024 Mooshieblob</span>
