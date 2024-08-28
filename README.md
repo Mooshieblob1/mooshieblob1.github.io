@@ -6,10 +6,15 @@ I'm a passionate Data Scientist with a keen eye for extracting insights from the
 
 ## Data wrangling arsenal:
 Programming Prowess: Python (Pandas, NumPy, Scikit-learn), R
+
 Taming the Data Beasts: SQL (MySQL, PostgreSQL)
-Cloud Powerhouse: AWS, GCP (optional: Specify your expertise)
-Model Maestro: Machine learning (Supervised, Unsupervised), Deep Learning frameworks (TensorFlow, PyTorch) (optional: Specify your strengths)
+
+Cloud Powerhouse: AWS, GCP
+
+Model Maestro: Machine learning (Supervised, Unsupervised), Deep Learning frameworks (TensorFlow, PyTorch)
+
 Visualization Virtuoso: Data visualization libraries (Matplotlib, Seaborn)
+
 Version Control Wizard: Git, GitHub
 
 ## Let's Connect!

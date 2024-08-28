@@ -32,7 +32,7 @@
 }
 
 body {
-  background-color: #010412;
+  background-color: #02061a;
   color: #FFFFFF;
   font-family: "Roboto", Arial, sans-serif;
 }
@@ -65,8 +65,8 @@ svg {
   position: fixed;
   top: 10px;
   left: 10px;
-  font-family: Arial, sans-serif;
-  font-size: 14.2px; /* 20% smaller font size */
+  font-family: Trebuchet MS, sans-serif;
+  font-size: 12.2px; /* 20% smaller font size */
   color: #FFCC00;
 }
 
@@ -194,7 +194,7 @@ body.splat-toggle .splat {
   }
 }
 .social-links {
-  background-color: rgba(1, 4, 18, 0.5);
+  background-color: rgba(2, 6, 26, 0.5);
   border-radius: 10px;
   padding: 10px;
 }
