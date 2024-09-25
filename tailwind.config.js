@@ -1,12 +1,22 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
-    "./index.html", // Include the root index.html file
-    "./assets/css/style.css", // Include the CSS file
-    "./assets/js/script.js", // Include the JS file
+    "./components/**/*.{js,vue,ts}",
+    "./layouts/**/*.vue",
+    "./pages/**/*.vue",
+    "./plugins/**/*.{js,ts}",
+    "./app.vue",
+    "./error.vue",
   ],
-  theme: {
-    extend: {},
+  css: [
+    "~/assets/css/style.css",
+  ],
+  build: {
+    postcss: {
+      plugins: {
+        tailwindcss: {},
+        autoprefixer: {},
+      },
+    },
   },
-  plugins: [],
 };
