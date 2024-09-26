@@ -1,59 +1,23 @@
+<!--
+    This is a current work in progress. Currently it is a simple image grid with everything being an even aspect ratio.
+    My future plans are to make it dynamically shift around the page dependant on the image's aspect ratio
+-->
+
 <template>
-    <img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto" />
-    <div class="container mx-auto">
-        <h1 class="text-4xl text-center pb-4">Images Page</h1>
-        <div class="image-grid">
-            <div v-for="image in images" :key="image.url" class="image-item" @click="openImage(image)">
-                <img :src="image.url" :alt="image.alt" />
+    <div><img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
+        <div class="container mx-auto">
+            <h1 class="text-4xl text-center pb-4">Images Page</h1>
+            <div class="image-grid">
+                <div v-for="image in images" :key="image.url" class="image-item" @click="openImage(image)">
+                    <img :src="image.url" :alt="image.alt">
+                </div>
             </div>
-        </div>
-        <div v-if="selectedImage" class="image-overlay" @click="closeImage">
-            <img :src="selectedImage.url" :alt="selectedImage.alt" class="enlarged-image" />
+            <div v-if="selectedImage" class="image-overlay" @click="closeImage">
+                <img :src="selectedImage.url" :alt="selectedImage.alt" class="enlarged-image">
+            </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-.container {
-    padding: 10%;
-}
-
-/* Add your custom styles here */
-.image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    grid-auto-flow: dense;
-}
-
-.image-item {
-    cursor: pointer;
-}
-
-.image-item img{
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.image-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 999;
-}
-
-.enlarged-image {
-    max-width: 80%;
-    max-height: 80%;
-}
-</style>
 
 <script>
 import '~/assets/css/output.css';
@@ -82,3 +46,45 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.container {
+    padding: 10%;
+}
+
+/* Add your custom styles here */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    grid-auto-flow: dense;
+}
+
+.image-item {
+    cursor: pointer;
+}
+
+.image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.enlarged-image {
+    max-width: 80%;
+    max-height: 80%;
+}
+</style>

@@ -1,10 +1,16 @@
+<!--
+    This component represents the navigation bar of the application.
+    It includes links to various sections of the site, providing
+    users with an easy way to navigate through the app.
+-->
+
 <template>
     <nav class="bg-transparent p-4 fixed top-0 right-0 w-full">
         <div class="container mx-auto flex justify-end items-center space-x-4">
             <div class="relative group">
-                <a href="https://blog.mooshieblob.com" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
+                <nuxt-link to="/blog" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
                     Blog
-                </a>
+                </nuxt-link>
             </div>
             <div class="relative group">
                 <a href="https://comfy.mooshieblob.com" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
