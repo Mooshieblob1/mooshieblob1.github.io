@@ -1,5 +1,5 @@
 # 🪄 Data Science Portfolio 🪄
-Welcome to my digital haven for all things data science! This README serves as a portal to explore my projects and delve into my skillset.
+Welcome to my digital haven for all things data science and web design! This README serves as a portal to explore my projects and delve into my skillset.
 
 ## About the Data Alchemist
 I'm a passionate Data Scientist with a keen eye for extracting insights from the digital wilderness. I thrive on crafting innovative solutions that leverage cutting-edge AI and machine learning to unlock the potential hidden within data.
@@ -8,6 +8,8 @@ I'm a passionate Data Scientist with a keen eye for extracting insights from the
 Programming Prowess: Python (Pandas, NumPy, Scikit-learn), R
 
 Taming the Data Beasts: SQL (MySQL, PostgreSQL)
+
+Exploring the World Wide Galactic Web: Nuxt.js, Vue.js, HTML, CSS, TailwindCSS, SASS, JS
 
 Cloud Powerhouse: AWS, GCP
 
