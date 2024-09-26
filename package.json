@@ -16,10 +16,10 @@
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@vueuse/head": "^2.0.0",
+    "node-fetch": "^3.0.0",
     "nuxt": "^3.13.0",
     "vue": "latest",
-    "vue-router": "latest",
-    "node-fetch": "^3.0.0"
+    "vue-router": "latest"
   },
   "devDependencies": {
     "@nuxt/types": "^2.18.1",
