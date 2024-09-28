@@ -24,7 +24,7 @@ export default defineNuxtConfig({
   },
   compatibilityDate: '2024-04-03',
   devtools: { enabled: true },
-  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxtjs/google-fonts', '@nuxt/eslint', '@nuxt/icon', '@pinia/nuxt'],
+  modules: ['@nuxtjs/tailwindcss', '@nuxtjs/color-mode', '@nuxtjs/google-fonts', '@nuxt/eslint', '@nuxt/icon'],
   css: [
     '~/assets/css/output.css',
     '~/assets/css/style.css',

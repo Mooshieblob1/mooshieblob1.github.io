@@ -1,5 +1,5 @@
 <template>
-    <div id="clock" />
+    <div id="DigitalClock" />
 </template>
 
 <script setup lang="ts">
@@ -18,7 +18,7 @@ onMounted(() => {
             minutes.toString().padStart(2, "0") +
             ":" +
             seconds.toString().padStart(2, "0");
-        const clockElement = document.getElementById("clock");
+        const clockElement = document.getElementById("DigitalClock");
         if (clockElement !== null) {
             clockElement.textContent = timeString;
         }
