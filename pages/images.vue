@@ -53,7 +53,7 @@ export default {
 
 <style scoped>
 .container {
-    padding: 10%;
+    padding: 5%;
 }
 
 .image-grid {
