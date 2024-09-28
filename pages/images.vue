@@ -33,6 +33,9 @@ export default {
                 { url: 'https://cdn.aibooru.download/sample/0a/b5/__mofu_original_generated_by_blob_artist_using_novelai__sample-0ab5d34b1a4c8cea224548af6b23dc62.jpg', alt: 'Image 4' },
                 { url: 'https://cdn.aibooru.download/sample/f0/f8/__reisen_udongein_inaba_touhou_generated_by_blob_artist_using_novelai__sample-f0f8cc355bc5e01266130b38489d3d0d.jpg', alt: 'Image 5' },
                 { url: 'https://cdn.aibooru.download/sample/50/af/__momo_velia_deviluke_to_love_ru_and_1_more_generated_by_blob_artist_using_novelai__sample-50af0e58fe1494825a013cd075ef605e.jpg', alt: 'Image 6' },
+                { url: 'https://cdn.aibooru.download/sample/4b/17/__original_generated_by_ai_s_love__sample-4b17749624e22a57485b7254787a9273.jpg', alt: 'Image 7' },
+                { url: 'https://cdn.aibooru.download/sample/d2/e0/__original_generated_by_sinozick__sample-d2e04470a4653ee60e6c8cdaad1a49ad.jpg', alt: 'Image 8' },
+                { url: 'https://cdn.aibooru.download/sample/a9/ab/__kaoru_project_kv_generated_by_qingsongzero__sample-a9ab756bae64a05ebe38e0485097c0c8.jpg', alt: 'Image 9' },
             ],
             selectedImage: null,
         };
