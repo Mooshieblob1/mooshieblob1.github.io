@@ -4,7 +4,8 @@
 -->
 
 <template>
-    <div><img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
+    <div>
+        <img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
         <div class="container mx-auto">
             <h1 class="text-4xl text-center pb-4">Images Page</h1>
             <div class="image-grid">
@@ -52,22 +53,21 @@ export default {
     padding: 10%;
 }
 
-/* Add your custom styles here */
 .image-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
-    grid-auto-flow: dense;
+    column-count: 3;
+    column-gap: 20px;
 }
 
 .image-item {
-    cursor: pointer;
+    display: inline-block;
+    margin-bottom: 20px;
+    width: 100%;
 }
 
 .image-item img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    display: block;
 }
 
 .image-overlay {
