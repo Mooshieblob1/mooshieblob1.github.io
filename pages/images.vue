@@ -10,7 +10,7 @@
             <h1 class="text-4xl text-center pb-4">Images Page</h1>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.url" class="image-item" @click="openImage(image)">
-                    <img :src="image.url" :alt="image.alt">
+                    <img :src="image.url" :alt="image.alt" class="transform transition-transform duration-300 hover:scale-105">
                 </div>
             </div>
             <div v-if="selectedImage" class="image-overlay" @click="closeImage">
