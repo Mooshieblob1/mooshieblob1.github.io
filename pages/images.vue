@@ -34,14 +34,10 @@ export default {
         async fetchImages() {
             const username = 'blob';
             const apiKey = '8W4PxfH5FUNQxJYiucdZR53Q';
-            const url = `https://aibooru.online/posts.json?tags=blob_%28artist%29`;
+            const url = `https://aibooru.online/posts.json?tags=blob_%28artist%29+-rating%3Ae+-rating%3Aq&login=${username}&api_key=${apiKey}`;
 
             try {
-                const response = await fetch(url, {
-                    headers: {
-                        'Authorization': 'Basic ' + btoa(`${username}:${apiKey}`)
-                    }
-                });
+                const response = await fetch(url);
 
                 if (response.ok) {
                     const data = await response.json();
