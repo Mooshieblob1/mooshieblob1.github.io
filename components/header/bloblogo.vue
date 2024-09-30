@@ -1,5 +1,5 @@
 <template>
-  <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto" />
+  <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-8" />
 </template>
 
 <script>
@@ -8,7 +8,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .logo {
   z-index: 9999 !important;
 }
