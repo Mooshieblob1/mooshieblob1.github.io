@@ -8,7 +8,7 @@
         <bloblogo />
         <div class="container mx-auto">
             <p class="text-center pb-4">
-                This is just a smaller selection of my SFW posts. To see more, go to 
+                This is a smaller selection of my SFW posts. To see more, go to 
                 <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer">
                     <strong><u>here</u></strong>
                 </a>
