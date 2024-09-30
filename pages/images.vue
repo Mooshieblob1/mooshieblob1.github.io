@@ -8,7 +8,11 @@
         <img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
         <div class="container mx-auto">
             <p class="text-center pb-4">
-                This is just a smaller selection of more SFW posts. To see more, go to <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer"><strong><u>here</u></strong></a>.
+                This is just a smaller selection of more SFW posts. To see more, go to 
+                <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer">
+                    <strong><u>here</u></strong>
+                </a>
+                <img src="~/assets/icons/aibooru.svg" alt="AIBooru Logo" class="inline-block h-4 w-4 ml-2">
             </p>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
