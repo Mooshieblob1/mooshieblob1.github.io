@@ -1,29 +1,27 @@
 <template>
-    <div id="DigitalClock" />
+    <div id="DigitalClock">{{ time }}</div>
 </template>
 
 <script setup lang="ts">
 import '~/assets/css/output.css';
-import { onMounted } from "vue";
+import { ref, onMounted } from 'vue';
+
+const time = ref('');
+
+function updateClock() {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
+    time.value =
+        hours.toString().padStart(2, '0') +
+        ':' +
+        minutes.toString().padStart(2, '0') +
+        ':' +
+        seconds.toString().padStart(2, '0');
+}
 
 onMounted(() => {
-    function updateClock() {
-        const now = new Date();
-        const hours = now.getHours();
-        const minutes = now.getMinutes();
-        const seconds = now.getSeconds();
-        const timeString =
-            hours.toString().padStart(2, "0") +
-            ":" +
-            minutes.toString().padStart(2, "0") +
-            ":" +
-            seconds.toString().padStart(2, "0");
-        const clockElement = document.getElementById("DigitalClock");
-        if (clockElement !== null) {
-            clockElement.textContent = timeString;
-        }
-    }
-
     // Call updateClock immediately to set the initial time
     updateClock();
 
