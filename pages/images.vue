@@ -8,7 +8,6 @@
         <img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
         <div class="container mx-auto">
             <h1 class="text-4xl text-center pb-4">Images Page</h1>
-            <input v-model="tag" @input="fetchImages" placeholder="Enter tag" class="mb-4 p-2 border rounded">
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
                     <img :src="image.file_url" :alt="image.tag_string" class="transform transition-transform duration-300 hover:scale-105">
@@ -29,14 +28,13 @@ export default {
         return {
             images: [],
             selectedImage: null,
-            tag: 'example_tag', // Default tag
         };
     },
     methods: {
         async fetchImages() {
             const username = 'blob';
-            const apiKey = '8W4PxfH5FUNQxJYiucdZR53Q';
-            const url = `https://AIBooru.donmai.us/posts.json?search[tag_string]=${this.tag}&login=${username}&api_key=${apiKey}`;
+            const apiKey = 'APIKEY';
+            const url = `https://aibooru.online/posts.json?search?tags=blob_%28artist%29=example_tag&login=${username}&api_key=${apiKey}`;
 
             try {
                 const response = await fetch(url, {
