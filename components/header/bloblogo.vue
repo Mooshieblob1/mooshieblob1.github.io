@@ -1,5 +1,5 @@
 <template>
-  <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-8" />
+  <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-14" />
 </template>
 
 <script>

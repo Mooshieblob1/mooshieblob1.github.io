@@ -1,7 +1,6 @@
 <!-- layouts/default.vue -->
 <template>
   <div>
-    <DigitalClock />
     <Navbar />
     <bloblogo />
     <NuxtPage />
