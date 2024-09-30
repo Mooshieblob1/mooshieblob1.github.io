@@ -10,7 +10,7 @@
             <h1 class="text-4xl text-center pb-4">Images Page</h1>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
-                    <img :src="image.media_asset.variants[2].url" :alt="image.tag_string" class="transform transition-transform duration-300 hover:scale-105">
+                    <img :src="image.media_asset.variants[1].url" :alt="image.tag_string" class="transform transition-transform duration-300 hover:scale-105">
                 </div>
             </div>
             <div v-if="selectedImage" class="image-overlay" @click="closeImage">
@@ -64,24 +64,27 @@ export default {
 
 <style scoped>
 .container {
-    padding: 5%;
+    padding: 2.5%;
 }
 
 .image-grid {
-    column-count: 3;
-    column-gap: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px; /* Adjust the gap as needed */
 }
 
 .image-item {
-    display: inline-block;
-    margin-bottom: 20px;
-    width: 100%;
+    flex: 1 0 auto;
+    max-width: unset;
+    margin-bottom: 5px;
+    height: 250px; /* Set the desired height for the image items */
 }
 
 .image-item img {
-    width: 100%;
-    height: auto;
-    display: block;
+    object-fit: cover;
+    height: 100%;
+    width: fit-content;
+    max-width: unset;
 }
 
 .image-overlay {
@@ -98,8 +101,10 @@ export default {
 }
 
 .enlarged-image {
-    max-width: 80%;
-    max-height: 80%;
+    max-width: 92.5%;
+    max-height: 92.5%;
 }
 </style>
+
+
 
