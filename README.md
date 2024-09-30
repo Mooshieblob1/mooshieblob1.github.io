@@ -1,4 +1,4 @@
-# 🪄 Data Science Portfolio 🪄
+# Data Science & Web Developer Portfolio
 Welcome to my digital haven for all things data science and web design! This README serves as a portal to explore my projects and delve into my skillset.
 
 ## About the Data Alchemist
