@@ -1,4 +1,4 @@
-# 🪄 Data Science Portfolio 🪄
+# Data Science & Web Developer Portfolio
 Welcome to my digital haven for all things data science and web design! This README serves as a portal to explore my projects and delve into my skillset.
 
 ## About the Data Alchemist
@@ -22,6 +22,6 @@ Version Control Wizard: Git, GitHub
 ## Let's Connect!
 Feel free to reach out if you have any questions or intriguing data challenges to tackle together.
 
-If you have any questions or would like to collaborate, feel free to reach out to me at [blob@mooshieblob.com](mailto:blob@mooshieblob.com).
+If you have any questions or would like to collaborate, feel free to reach out to me at [blob@mooshieblob.com](mailto:blob@mooshieblob.com) or mooshieblob on Discord.
 
 Happy data exploration!
