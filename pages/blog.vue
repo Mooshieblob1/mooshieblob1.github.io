@@ -1,5 +1,6 @@
 <template>
   <div>
+    <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16" />
     <div>
       <h1>Blog</h1>
       <div v-for="post in posts" :key="post.id" class="post">

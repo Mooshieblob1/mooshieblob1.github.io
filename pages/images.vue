@@ -5,7 +5,7 @@
 
 <template>
     <div>
-        <bloblogo />
+        <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16" />
         <div class="container mx-auto">
             <p class="text-center pb-4">
                 This is a smaller selection of my SFW posts. To see more, go to 

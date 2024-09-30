@@ -2,7 +2,6 @@
 <template>
   <div>
     <Navbar />
-    <bloblogo />
     <NuxtPage />
     <WebFooter />
   </div>
