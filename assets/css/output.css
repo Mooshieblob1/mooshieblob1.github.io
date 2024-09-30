@@ -766,3 +766,13 @@ body.splat-toggle .splat {
   border-radius: 10px;
   padding: 10px;
 }
+
+nav {
+  z-index: 9998; /* Use a high value to ensure the navbar is on top */
+  background-color: rgba(255, 255, 255, 0.2); /* Frosted glass background at 20% opacity */
+  backdrop-filter: blur(20px); /* Apply blur effect to create frosted glass effect */
+}
+
+nav a {
+  text-shadow: 0 0 4px black; /* Add an outer stroke of 1px to the text */
+}
