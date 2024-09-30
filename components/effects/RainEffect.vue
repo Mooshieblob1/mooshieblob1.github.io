@@ -1,6 +1,6 @@
 <template>
   <div class="rain-container">
-    <div v-for="n in raindropsCount" :key="n" class="raindrop"></div>
+    <div v-for="n in raindropsCount" :key="n" class="raindrop" :style="getRaindropStyle()"></div>
   </div>
 </template>
 
@@ -8,22 +8,27 @@
 export default {
   data() {
     return {
-      raindropsCount: 100
+      raindropsCount: 50 // Reduced for better performance
     }
   },
   mounted() {
     this.animateRain();
   },
   methods: {
+    getRaindropStyle() {
+      const delay = Math.random() * 5;
+      const duration = Math.random() * 1 + 0.5;
+      const leftPosition = Math.random() * 100;
+      return {
+        left: `${leftPosition}%`,
+        top: '-15px', // Start above the screen
+        animationDelay: `${delay}s`,
+        animationDuration: `${duration}s`
+      };
+    },
     animateRain() {
-      const raindrops = this.$el.querySelectorAll('.raindrop');
-      raindrops.forEach(drop => {
-        const delay = Math.random() * 5;
-        const duration = Math.random() * 1 + 0.5;
-        drop.style.left = `${Math.random() * 100}%`;
-        drop.style.animationDelay = `${delay}s`;
-        drop.style.animationDuration = `${duration}s`;
-      });
+      // This method is now optional since we're using getRaindropStyle
+      // You can remove it if you're not planning to do any additional animations
     }
   }
 }
@@ -38,19 +43,20 @@ export default {
   height: 100%;
   pointer-events: none;
   z-index: 1000;
+  overflow: hidden;
 }
 
 .raindrop {
   position: absolute;
-  width: 2px;
+  width: 1px;
   height: 15px;
-  background: linear-gradient(transparent, #00f);
+  background: linear-gradient(transparent, #fff);
   animation: fall linear infinite;
 }
 
 @keyframes fall {
   0% {
-    transform: translateY(-100px);
+    transform: translateY(-15px);
   }
   100% {
     transform: translateY(100vh);

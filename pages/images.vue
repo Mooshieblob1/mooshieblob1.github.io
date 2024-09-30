@@ -1,6 +1,8 @@
 <template>
     <div>
-        <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16" />
+        <NuxtLink to="/">
+            <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16 cursor-pointer" />
+        </NuxtLink>
         <div class="container mx-auto">
             <p class="text-center pb-4">
                 This is a smaller selection of my SFW posts. To see more, go to
@@ -26,6 +28,7 @@
 import '~/assets/css/output.css';
 
 export default {
+    layout: 'no-rain', // This line specifies the use of the no-rain layout
     data() {
         return {
             images: [],
