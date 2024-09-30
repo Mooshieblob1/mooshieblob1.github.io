@@ -7,7 +7,9 @@
     <div>
         <img src="~/assets/images/bloblogo.webp" alt="Logo" class="logo h-[10vw] w-auto mx-auto">
         <div class="container mx-auto">
-            <h1 class="text-4xl text-center pb-4">Images Page</h1>
+            <p class="text-center pb-4">
+                This is just a smaller selection of more SFW posts. To see more, go to <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer"><strong><u>here</u></strong></a>.
+            </p>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
                     <img :src="image.media_asset.variants[1].url" :alt="image.tag_string" class="transform transition-transform duration-300 hover:scale-105">
