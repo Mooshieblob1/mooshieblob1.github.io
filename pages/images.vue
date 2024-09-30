@@ -33,8 +33,8 @@ export default {
     methods: {
         async fetchImages() {
             const username = 'blob';
-            const apiKey = 'APIKEY';
-            const url = `https://aibooru.online/posts.json?search?tags=blob_%28artist%29=example_tag&login=${username}&api_key=${apiKey}`;
+            const apiKey = '8W4PxfH5FUNQxJYiucdZR53Q';
+            const url = `https://aibooru.online/posts.json?tags=blob_%28artist%29`;
 
             try {
                 const response = await fetch(url, {
