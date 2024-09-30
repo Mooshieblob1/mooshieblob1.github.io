@@ -1,14 +1,9 @@
-<!--
-    This is a current work in progress. Currently it is a simple image grid with everything being an even aspect ratio.
-    My future plans are to make it dynamically shift around the page dependant on the image's aspect ratio
--->
-
 <template>
     <div>
         <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16" />
         <div class="container mx-auto">
             <p class="text-center pb-4">
-                This is a smaller selection of my SFW posts. To see more, go to 
+                This is a smaller selection of my SFW posts. To see more, go to
                 <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer">
                     <strong><u>here</u></strong>
                 </a>
@@ -16,7 +11,8 @@
             </p>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
-                    <img :src="image.media_asset.variants[1].url" :alt="image.tag_string" class="transform transition-transform duration-300 hover:scale-105">
+                    <img :src="image.media_asset.variants[1].url" :alt="image.tag_string"
+                        class="transform transition-transform duration-300 hover:scale-105">
                 </div>
             </div>
             <div v-if="selectedImage" class="image-overlay" @click="closeImage">
@@ -25,7 +21,7 @@
         </div>
     </div>
 </template>
-
+  
 <script>
 import '~/assets/css/output.css';
 
@@ -38,19 +34,11 @@ export default {
     },
     methods: {
         async fetchImages() {
-            const username = 'blob';
-            const apiKey = '8W4PxfH5FUNQxJYiucdZR53Q';
-            const url = `https://aibooru.online/posts.json?tags=blob_%28artist%29+-oppai_loli+-rating%3Ae+-rating%3Aq+-huge_breasts+-breast_hold+-cameltoe+-groin+-cleavage+-bikini+-ass_focus+-naked_apron+-underboob+-panties+-upskirt&login=${username}&api_key=${apiKey}`;
-
+            const url = 'https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/';
             try {
                 const response = await fetch(url);
-
-                if (response.ok) {
-                    const data = await response.json();
-                    this.images = data;
-                } else {
-                    console.error('Error fetching images:', response.statusText);
-                }
+                const data = await response.json();
+                this.images = data; // The JSON is already an array of images
             } catch (error) {
                 console.error('Error fetching images:', error);
             }
@@ -67,7 +55,7 @@ export default {
     },
 };
 </script>
-
+  
 <style scoped>
 .container {
     padding: 2.5%;
@@ -76,14 +64,14 @@ export default {
 .image-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px; /* Adjust the gap as needed */
+    gap: 5px;
 }
 
 .image-item {
     flex: 1 0 auto;
     max-width: unset;
     margin-bottom: 5px;
-    height: 250px; /* Set the desired height for the image items */
+    height: 250px;
 }
 
 .image-item img {
@@ -109,8 +97,4 @@ export default {
 .enlarged-image {
     max-width: 92.5%;
     max-height: 92.5%;
-}
-</style>
-
-
-
+}</style>
