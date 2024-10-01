@@ -8,17 +8,17 @@
     <nav class="bg-transparent p-4 fixed top-0 right-0 w-full">
         <div class="container mx-auto flex justify-end items-center space-x-4">
             <div class="relative group">
-                <nuxt-link to="/blog" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
+                <nuxt-link to="/blog" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
                     Blog
                 </nuxt-link>
             </div>
             <div class="relative group">
-                <a href="https://comfy.mooshieblob.com" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
+                <a href="https://comfy.mooshieblob.com" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
                     ComfyUI
                 </a>
             </div>
             <div class="relative group">
-                <nuxt-link to="/images" class="text-white hover:text-gray-400 hover:text-xl hover:font-bold transition duration-300">
+                <nuxt-link to="/images" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
                     Images
                 </nuxt-link>
             </div>
@@ -36,4 +36,19 @@ export default {
 
 <style>
 /* Add any additional styles here if needed */
+@keyframes glow {
+    0% {
+        text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
+    }
+    50% {
+        text-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.5);
+    }
+    100% {
+        text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
+    }
+}
+
+.hover\:glow:hover {
+    animation: glow 1s infinite;
+}
 </style>
