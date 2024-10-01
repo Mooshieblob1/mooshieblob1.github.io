@@ -81,7 +81,7 @@ onMounted(() => {
     flex: 1 0 auto;
     max-width: unset;
     margin-bottom: 5px;
-    height: 200px;
+    height: 325px;
 }
 
 .image-item img {
