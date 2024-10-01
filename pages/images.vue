@@ -84,7 +84,7 @@ onMounted(() => {
     height: 325px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 780px) {
     .image-item {
         height: 100px;
     }
