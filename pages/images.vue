@@ -84,6 +84,12 @@ onMounted(() => {
     height: 325px;
 }
 
+@media (max-width: 640px) {
+    .image-item {
+        height: 100px;
+    }
+}
+
 .image-item img {
     object-fit: cover;
     height: 100%;
