@@ -2,6 +2,7 @@
   "name": "nuxt-app",
   "private": true,
   "type": "module",
+  "main": "index.js",
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -18,10 +19,12 @@
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@vueuse/head": "^2.0.0",
+    "glob": "^11.0.0",
     "node-fetch": "^3.0.0",
-    "nuxt": "^3.13.0",
+    "nuxt": "^3.13.2",
     "vue": "latest",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "signal-exit": "^3.0.3"
   },
   "devDependencies": {
     "@nuxt/types": "^2.18.1",

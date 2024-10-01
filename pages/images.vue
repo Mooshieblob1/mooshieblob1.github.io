@@ -23,42 +23,48 @@
         </div>
     </div>
 </template>
-  
-<script>
+
+<script setup>
+import { onMounted } from 'vue';
+import { useRainEffect } from '~/composables/useRainEffect';
 import '~/assets/css/output.css';
 
-export default {
-    layout: 'no-rain', // This line specifies the use of the no-rain layout
-    data() {
-        return {
-            images: [],
-            selectedImage: null,
-        };
-    },
-    methods: {
-        async fetchImages() {
-            const url = 'https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/';
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                this.images = data; // The JSON is already an array of images
-            } catch (error) {
-                console.error('Error fetching images:', error);
-            }
-        },
-        openImage(image) {
-            this.selectedImage = image;
-        },
-        closeImage() {
-            this.selectedImage = null;
-        },
-    },
-    created() {
-        this.fetchImages();
-    },
+const { toggleRainEffect } = useRainEffect();
+
+// Disable rain effect for this page
+toggleRainEffect(false);
+
+definePageMeta({
+    layout: 'no-rain',
+});
+
+const images = ref([]);
+const selectedImage = ref(null);
+
+const fetchImages = async () => {
+    const url = 'https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/';
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        images.value = data;
+    } catch (error) {
+        console.error('Error fetching images:', error);
+    }
 };
+
+const openImage = (image) => {
+    selectedImage.value = image;
+};
+
+const closeImage = () => {
+    selectedImage.value = null;
+};
+
+onMounted(() => {
+    fetchImages();
+});
 </script>
-  
+
 <style scoped>
 .container {
     padding: 2.5%;
@@ -100,4 +106,5 @@ export default {
 .enlarged-image {
     max-width: 92.5%;
     max-height: 92.5%;
-}</style>
+}
+</style>
