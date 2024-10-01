@@ -13,8 +13,8 @@
             </p>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
-                    <img :src="image.media_asset.variants[0].url" :alt="image.tag_string"
-                        class="transform transition-transform duration-300 hover:scale-105">
+                    <v-lazy-image :src="image.media_asset.variants[2].url" :alt="image.tag_string"
+                        class="transform transition-transform duration-300 hover:scale-105" />
                 </div>
             </div>
             <div v-if="selectedImage" class="image-overlay" @click="closeImage">
@@ -25,9 +25,10 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useRainEffect } from '~/composables/useRainEffect';
 import '~/assets/css/output.css';
+import VLazyImage from 'v-lazy-image';
 
 const { toggleRainEffect } = useRainEffect();
 

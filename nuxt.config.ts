@@ -25,7 +25,7 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxtjs/google-fonts',
     '@nuxt/eslint',
-    '@nuxt/icon'
+    '@nuxt/icon',
   ],
   css: [
     '~/assets/css/style.css',

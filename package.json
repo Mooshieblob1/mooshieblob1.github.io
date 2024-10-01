@@ -20,12 +20,15 @@
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@vueuse/head": "^2.0.0",
     "archiver-utils": "^5.0.2",
+    "axios": "^1.7.7",
     "glob": "^11.0.0",
     "minipass": "^7.1.2",
     "node-fetch": "^3.0.0",
     "nuxt": "^3.13.2",
     "signal-exit": "^3.0.3",
+    "v-lazy-image": "^2.1.1",
     "vue": "latest",
+    "vue-intersection-observer": "^0.1.9",
     "vue-router": "latest"
   },
   "devDependencies": {
