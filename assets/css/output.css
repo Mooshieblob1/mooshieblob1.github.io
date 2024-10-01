@@ -590,16 +590,6 @@ body {
   font-family: "Roboto", Arial, sans-serif;
 }
 
-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  color: #FFFFFF;
-  text-align: center;
-  padding: 10px 0;
-}
-
 #ipv6 {
   height: 18px;
   margin-left: 10px;
@@ -609,7 +599,7 @@ footer {
   display: flex;
   justify-content: center;
   align-items: center;
-  color:rgb(174, 174, 174);
+  color: white;
 }
 
 svg {
@@ -774,5 +764,5 @@ nav {
 }
 
 nav a {
-  text-shadow: 0 0 4px black; /* Add an outer stroke of 1px to the text */
+  text-shadow: 0 0 8px black; /* Add an outer stroke of 1px to the text */
 }

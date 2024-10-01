@@ -1,5 +1,5 @@
 <template>
-    <footer>
+    <footer class="footer-container">
         <div class="footer-text">
             <span>© 2024 Mooshieblob</span>
             <a id="ipv6" href="https://iplocation.io/ipv6-compatibility-checker?url=referer">
@@ -20,8 +20,11 @@ export default {
 </script>
 
 <style scoped>
-.footer-text {
+.footer-container {
+    background-color: transparent;
+    backdrop-filter: blur(10px);
     text-align: center;
     padding: 20px;
+    text-shadow: 0 0 8px black;
 }
 </style>
