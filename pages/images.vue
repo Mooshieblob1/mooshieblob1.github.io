@@ -13,7 +13,7 @@
             </p>
             <div class="image-grid">
                 <div v-for="image in images" :key="image.id" class="image-item" @click="openImage(image)">
-                    <img :src="image.media_asset.variants[1].url" :alt="image.tag_string"
+                    <img :src="image.media_asset.variants[0].url" :alt="image.tag_string"
                         class="transform transition-transform duration-300 hover:scale-105">
                 </div>
             </div>
@@ -74,7 +74,7 @@ export default {
     flex: 1 0 auto;
     max-width: unset;
     margin-bottom: 5px;
-    height: 250px;
+    height: 200px;
 }
 
 .image-item img {
