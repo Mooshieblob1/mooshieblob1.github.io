@@ -1,10 +1,13 @@
 # Data Science & Web Developer Portfolio
+
 Welcome to my digital haven for all things data science and web design! This README serves as a portal to explore my projects and delve into my skillset.
 
 ## About the Data Alchemist
+
 I'm a passionate Data Scientist with a keen eye for extracting insights from the digital wilderness. I thrive on crafting innovative solutions that leverage cutting-edge AI and machine learning to unlock the potential hidden within data.
 
-## Data wrangling arsenal:
+## Data wrangling arsenal
+
 Programming Prowess: Python (Pandas, NumPy, Scikit-learn), R
 
 Taming the Data Beasts: SQL (MySQL, PostgreSQL)
@@ -19,7 +22,8 @@ Visualization Virtuoso: Data visualization libraries (Matplotlib, Seaborn)
 
 Version Control Wizard: Git, GitHub
 
-## Let's Connect!
+## Let's Connect
+
 Feel free to reach out if you have any questions or intriguing data challenges to tackle together.
 
 If you have any questions or would like to collaborate, feel free to reach out to me at [blob@mooshieblob.com](mailto:blob@mooshieblob.com) or mooshieblob on Discord.
