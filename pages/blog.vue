@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gray-900 p-8">
     <NuxtLink to="/">
-      <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[5vw] w-auto mx-auto mb-12 mt-12" />
+      <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[5vw] w-auto mx-auto mb-12 mt-12">
     </NuxtLink>
     <div class="max-w-4xl mx-auto">
       <h1 class="text-4xl font-bold text-yellow-400 mb-8 text-center">Blog</h1>
