@@ -13,15 +13,17 @@
             </p>
             <div class="image-grid">
                 <div v-for="(image, index) in images" :key="image.id" class="image-item" @click="openImage(image)">
-                    <transition name="bounce" appear>
+                    <div ref="imageRefs" :data-index="index" class="h-full">
                         <v-lazy-image :src="image.media_asset.variants[2].url"
                             :src-placeholder="getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'"
-                            :alt="image.tag_string" @load="onImageLoad(index, image)"
-                            :class="['transform transition-transform duration-300 hover:scale-105', { 'loaded': loadedImages[index] }]" />
-                    </transition>
+                            :alt="image.tag_string" @load="onImageLoad(index, image)" :class="['transform transition-all duration-1000 ease-out',
+                                { 'loaded': loadedImages[index] },
+                                { 'translate-y-0 opacity-100': imageInView[index] },
+                                { 'translate-y-1/4 opacity-0': !imageInView[index] }]" />
+                    </div>
                 </div>
             </div>
-            <transition name="bounce">
+            <transition name="fade">
                 <div v-if="selectedImage" class="image-overlay" @click="closeImage">
                     <img :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
                         :alt="selectedImage.tag_string" class="enlarged-image">
@@ -32,7 +34,7 @@
 </template>
   
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, onUnmounted, nextTick } from 'vue';
 import { useRainEffect } from '~/composables/useRainEffect';
 import '~/assets/css/output.css';
 import VLazyImage from 'v-lazy-image';
@@ -49,6 +51,8 @@ definePageMeta({
 const images = ref([]);
 const selectedImage = ref(null);
 const loadedImages = ref([]);
+const imageInView = ref([]);
+const imageRefs = ref([]);
 
 const fetchImages = async () => {
     const url = 'https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/';
@@ -57,6 +61,7 @@ const fetchImages = async () => {
         const data = await response.json();
         images.value = data;
         loadedImages.value = new Array(data.length).fill(false);
+        imageInView.value = new Array(data.length).fill(false);
     } catch (error) {
         console.error('Error fetching images:', error);
     }
@@ -84,32 +89,41 @@ const getCachedImageUrl = (id) => {
     return localStorage.getItem(`cachedImage_${id}`);
 };
 
+let observer;
+
 onMounted(() => {
-    fetchImages();
+    fetchImages().then(() => {
+        nextTick(() => {
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    const index = parseInt(entry.target.dataset.index);
+                    imageInView.value[index] = entry.isIntersecting;
+                });
+            }, { threshold: 0.1, rootMargin: '100px' });
+
+            imageRefs.value.forEach((ref) => {
+                if (ref) observer.observe(ref);
+            });
+        });
+    });
+});
+
+onUnmounted(() => {
+    if (observer) {
+        observer.disconnect();
+    }
 });
 </script>
   
 <style scoped>
-.bounce-enter-active {
-    animation: bounce-in 0.5s;
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s ease;
 }
 
-.bounce-leave-active {
-    animation: bounce-in 0.5s reverse;
-}
-
-@keyframes bounce-in {
-    0% {
-        transform: scale(0);
-    }
-
-    50% {
-        transform: scale(1.25);
-    }
-
-    100% {
-        transform: scale(1);
-    }
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 
 .image-item {
@@ -118,7 +132,8 @@ onMounted(() => {
 
 .v-lazy-image {
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.3s, transform 1s ease-in-out;
+    /* Updated to ease-in-out */
 }
 
 .v-lazy-image.loaded {
@@ -141,6 +156,13 @@ onMounted(() => {
     margin-bottom: 5px;
     height: 325px;
     cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+    /* Added transition for hover effect */
+}
+
+.image-item:hover {
+    transform: scale(1.05);
+    /* Add a slight scale effect on hover */
 }
 
 @media (max-width: 780px) {
