@@ -72,19 +72,26 @@ const fetchPosts = async () => {
   try {
     const response = await fetch(`/api/posts?page=${page.value}&limit=3`);
     if (!response.ok) {
-      throw new Error('Failed to fetch posts');
+      throw new Error(`Failed to fetch posts: ${response.status} ${response.statusText}`);
     }
     const data = await response.json();
     console.log('Received data:', data);
-    posts.value = [...posts.value, ...data.posts.map((post: Omit<Post, 'isExpanded'>) => ({
-      ...post,
-      isExpanded: false,
-    }))];
-    hasMore.value = data.hasMore;
-    page.value++;
-    console.log('Updated posts. Total count:', posts.value.length, 'hasMore:', hasMore.value);
+    
+    if (Array.isArray(data.posts) && data.posts.length > 0) {
+      posts.value = [...posts.value, ...data.posts.map((post: Omit<Post, 'isExpanded'>) => ({
+        ...post,
+        isExpanded: false,
+      }))];
+      hasMore.value = data.hasMore;
+      page.value++;
+      console.log('Updated posts. Total count:', posts.value.length, 'hasMore:', hasMore.value);
+    } else {
+      console.log('No more posts received');
+      hasMore.value = false;
+    }
   } catch (error) {
     console.error('Error fetching posts:', error);
+    hasMore.value = false;
   } finally {
     loading.value = false;
   }
@@ -124,12 +131,12 @@ const resetAndFetch = () => {
   page.value = 1;
   hasMore.value = true;
   fetchPosts();
-  setupIntersectionObserver();
 };
 
 onMounted(() => {
   console.log('Component mounted');
   resetAndFetch();
+  setupIntersectionObserver();
 });
 
 onUnmounted(() => {
@@ -142,6 +149,7 @@ watch(() => route.path, (newPath, oldPath) => {
   if (newPath === '/blog' && oldPath !== '/blog') {
     console.log('Returned to blog page, resetting and fetching posts');
     resetAndFetch();
+    setupIntersectionObserver();
   }
 });
 </script>

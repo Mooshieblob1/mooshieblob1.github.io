@@ -1,5 +1,17 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 
+interface Post {
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+}
+
+interface PaginatedResponse {
+  posts: Post[];
+  hasMore: boolean;
+}
+
 const posts = [
   {
     id: 1,
@@ -63,7 +75,7 @@ const posts = [
   }
 ]
 
-export default defineEventHandler((event) => {
+export default defineEventHandler((event): Post | PaginatedResponse => {
   const { id } = event.context.params || {};
 
   if (id) {
@@ -80,6 +92,14 @@ export default defineEventHandler((event) => {
   const query = getQuery(event)
   const page = Number(query.page) || 1
   const limit = Number(query.limit) || 3
+  
+  if (page < 1 || limit < 1) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid page or limit parameter',
+    })
+  }
+
   const startIndex = (page - 1) * limit
   const endIndex = page * limit
 
