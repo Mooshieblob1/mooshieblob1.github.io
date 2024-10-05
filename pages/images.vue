@@ -38,7 +38,7 @@
         >
           <div ref="imageRefs" :data-index="index" class="h-full">
             <v-lazy-image
-              :src="image.media_asset.variants[2].url"
+              :src="image.media_asset.variants[1].url"
               :src-placeholder="
                 getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'
               "
