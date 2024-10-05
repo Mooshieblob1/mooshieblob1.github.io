@@ -38,7 +38,7 @@
         >
           <div ref="imageRefs" :data-index="index" class="h-full">
             <img
-              :src="image.media_asset.variants[0].url"
+              :src="image.media_asset.variants[2].url"
               :alt="image.tag_string"
               :class="[
                 'transform transition-all duration-1000 ease-out',
