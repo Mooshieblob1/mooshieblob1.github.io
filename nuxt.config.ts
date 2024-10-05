@@ -22,19 +22,25 @@ export default defineNuxtConfig({
     pageTransition: false,
     layoutTransition: false,
   },
+
   devtools: { enabled: true },
+
   modules: [
     "@nuxtjs/tailwindcss",
     "@nuxtjs/color-mode",
     "@nuxtjs/google-fonts",
+    "@nuxt/icon",
   ],
+
   css: ["~/assets/css/style.css"],
+
   postcss: {
     plugins: {
       tailwindcss: {},
       autoprefixer: {},
     },
   },
+
   vite: {
     css: {
       preprocessorOptions: {
@@ -42,17 +48,22 @@ export default defineNuxtConfig({
       },
     },
   },
+
   nitro: {
     routeRules: {
       "/api/**": { cors: true },
     },
   },
+
   googleFonts: {
     families: {
       // Add your font families here
     },
   },
+
   colorMode: {
     classSuffix: "",
   },
+
+  compatibilityDate: "2024-10-06",
 });
