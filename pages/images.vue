@@ -1,7 +1,9 @@
 <template>
     <div>
         <NuxtLink to="/">
-            <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16 cursor-pointer" />
+            <img
+src="~/assets/images/bloblogo.webp" alt="logo"
+                class="logo h-[10vw] w-auto mx-auto mt-16 cursor-pointer" >
         </NuxtLink>
         <div class="container mx-auto">
             <p class="text-center pb-4">
@@ -14,25 +16,30 @@
             <div class="image-grid">
                 <div v-for="(image, index) in images" :key="image.id" class="image-item" @click="openImage(image)">
                     <div ref="imageRefs" :data-index="index" class="h-full">
-                        <v-lazy-image :src="image.media_asset.variants[2].url"
+                        <v-lazy-image
+:src="image.media_asset.variants[2].url"
                             :src-placeholder="getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'"
-                            :alt="image.tag_string" @load="onImageLoad(index, image)" :class="['transform transition-all duration-1000 ease-out',
+                            :alt="image.tag_string" :class="[
+                                'transform transition-all duration-1000 ease-out',
                                 { 'loaded': loadedImages[index] },
                                 { 'translate-y-0 opacity-100': imageInView[index] },
-                                { 'translate-y-1/4 opacity-0': !imageInView[index] }]" />
+                                { 'translate-y-1/4 opacity-0': !imageInView[index] },
+                                `delay-${index % 5}` // Add staggered delay
+                            ]" @load="onImageLoad(index, image)" />
                     </div>
                 </div>
             </div>
             <transition name="fade">
                 <div v-if="selectedImage" class="image-overlay" @click="closeImage">
-                    <img :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
+                    <img
+:src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
                         :alt="selectedImage.tag_string" class="enlarged-image">
                 </div>
             </transition>
         </div>
     </div>
 </template>
-  
+
 <script setup>
 import { onMounted, ref, onUnmounted, nextTick } from 'vue';
 import { useRainEffect } from '~/composables/useRainEffect';
@@ -114,7 +121,7 @@ onUnmounted(() => {
     }
 });
 </script>
-  
+
 <style scoped>
 .fade-enter-active,
 .fade-leave-active {
@@ -128,16 +135,38 @@ onUnmounted(() => {
 
 .image-item {
     position: relative;
+    overflow: hidden;
+    /* Add this to clip the image during hover animation */
 }
 
 .v-lazy-image {
     opacity: 0;
-    transition: opacity 0.3s, transform 1s ease-in-out;
-    /* Updated to ease-in-out */
+    transition: opacity 0.3s, transform 0.5s ease-in-out;
 }
 
 .v-lazy-image.loaded {
     opacity: 1;
+}
+
+/* Add staggered delay classes */
+.delay-0 {
+    transition-delay: 0ms;
+}
+
+.delay-1 {
+    transition-delay: 100ms;
+}
+
+.delay-2 {
+    transition-delay: 200ms;
+}
+
+.delay-3 {
+    transition-delay: 300ms;
+}
+
+.delay-4 {
+    transition-delay: 400ms;
 }
 
 .container {
@@ -157,12 +186,11 @@ onUnmounted(() => {
     height: 325px;
     cursor: pointer;
     transition: transform 0.3s ease-in-out;
-    /* Added transition for hover effect */
 }
 
-.image-item:hover {
-    transform: scale(1.05);
-    /* Add a slight scale effect on hover */
+.image-item:hover img {
+    transform: scale(1.1);
+    /* Increase scale for more noticeable effect */
 }
 
 @media (max-width: 780px) {
@@ -176,6 +204,8 @@ onUnmounted(() => {
     height: 100%;
     width: fit-content;
     max-width: unset;
+    transition: transform 0.3s ease-in-out;
+    /* Add transition for smooth hover effect */
 }
 
 .image-overlay {
@@ -194,5 +224,13 @@ onUnmounted(() => {
 .enlarged-image {
     max-width: 92.5%;
     max-height: 92.5%;
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-active .enlarged-image {
+    opacity: 1;
+    transform: scale(1);
 }
 </style>
