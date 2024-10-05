@@ -38,7 +38,7 @@
         >
           <div ref="imageRefs" :data-index="index" class="h-full">
             <v-lazy-image
-              :src="image.media_asset.variants[1].url"
+              :src="image.media_asset.variants[2].url"
               :src-placeholder="
                 getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'
               "
@@ -280,7 +280,7 @@ onUnmounted(() => {
   flex: 1 0 auto;
   max-width: unset;
   margin-bottom: 5px;
-  height: 325px;
+  height: 200px;
   cursor: pointer;
   transition: transform 0.3s ease-in-out;
 }
