@@ -1,48 +1,49 @@
 <template>
-    <div>
-      <NuxtLink to="/">
-        <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16 cursor-pointer">
-      </NuxtLink>
-      <div class="container mx-auto">
-        <p class="text-center pb-4">
-          This is a smaller selection of my SFW posts. To see more, go to
-          <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer">
-            <strong><u>here</u></strong>
-          </a>
-          <img src="~/assets/icons/aibooru.svg" alt="AIBooru Logo" class="inline-block h-4 w-4 ml-2">
-        </p>
-        <div class="image-grid">
-          <div v-for="(image, index) in images" :key="image.id" class="image-item" @click="openImage(image)">
-            <div ref="imageRefs" :data-index="index" class="h-full">
-              <v-lazy-image
-                :src="image.media_asset.variants[2].url"
-                :src-placeholder="getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'"
-                :alt="image.tag_string"
-                :class="[
-                  'transform transition-all duration-1000 ease-out',
-                  { 'loaded': loadedImages[index] },
-                  { 'translate-y-0 opacity-100': imageInView[index] },
-                  { 'translate-y-1/4 opacity-0': !imageInView[index] && scrollDirection === 'down' },
-                  { '-translate-y-1/4 opacity-0': !imageInView[index] && scrollDirection === 'up' },
-                  `delay-${index % 5}`
-                ]"
-                @load="onImageLoad(index, image)"
-              />
-            </div>
+  <div>
+    <NuxtLink to="/">
+      <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[10vw] w-auto mx-auto mt-16 cursor-pointer">
+    </NuxtLink>
+    <div class="container mx-auto">
+      <p class="text-center pb-4">
+        This is a smaller selection of my SFW posts. To see more, go to
+        <a href="https://aibooru.online/posts?tags=user%3ABlob" target="_blank" rel="noopener noreferrer">
+          <strong><u>here</u></strong>
+        </a>
+        <img src="~/assets/icons/aibooru.svg" alt="AIBooru Logo" class="inline-block h-4 w-4 ml-2">
+      </p>
+      <div class="image-grid">
+        <div v-for="(image, index) in images" :key="image.id" class="image-item" @click="openImage(image)">
+          <div ref="imageRefs" :data-index="index" class="h-full">
+            <v-lazy-image
+              :src="image.media_asset.variants[2].url"
+              :src-placeholder="getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'"
+              :alt="image.tag_string"
+              :class="[
+                'transform transition-all duration-1000 ease-out',
+                { 'loaded': loadedImages[index] },
+                { 'translate-y-0 opacity-100': imageInView[index] },
+                { 'translate-y-1/4 opacity-0': !imageInView[index] && scrollDirection === 'down' },
+                { '-translate-y-1/4 opacity-0': !imageInView[index] && scrollDirection === 'up' },
+                `delay-${index % 5}`
+              ]"
+              @load="onImageLoad(index, image)"
+            />
           </div>
         </div>
-        <transition name="fade">
-          <div v-if="selectedImage" class="image-overlay" @click="closeImage">
-            <img
-              :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
-              :alt="selectedImage.tag_string"
-              class="enlarged-image"
-            >
-          </div>
-        </transition>
       </div>
+      <transition name="fade">
+        <div v-if="selectedImage" class="image-overlay" @click="closeImage">
+          <img
+            :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
+            :alt="selectedImage.tag_string"
+            :class="['enlarged-image', { 'loaded': enlargedImageLoaded }]"
+            @load="onEnlargedImageLoad"
+          >
+        </div>
+      </transition>
     </div>
-  </template>
+  </div>
+</template>
 
 <script setup>
 import { onMounted, ref, onUnmounted, nextTick } from 'vue';
@@ -68,6 +69,7 @@ const loadedImages = ref([]);
 const imageInView = ref([]);
 const imageRefs = ref([]);
 const scrollDirection = ref('down');
+const enlargedImageLoaded = ref(false);
 let lastScrollTop = 0;
 
 const fetchImages = async () => {
@@ -90,11 +92,17 @@ const onImageLoad = (index, image) => {
 
 const openImage = (image) => {
   selectedImage.value = image;
+  enlargedImageLoaded.value = false;
   cacheImage(image.id, image.file_url);
 };
 
 const closeImage = () => {
   selectedImage.value = null;
+  enlargedImageLoaded.value = false;
+};
+
+const onEnlargedImageLoad = () => {
+  enlargedImageLoaded.value = true;
 };
 
 const cacheImage = (id, url) => {
@@ -247,7 +255,7 @@ onUnmounted(() => {
     transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.fade-enter-active .enlarged-image {
+.enlarged-image.loaded {
     opacity: 1;
     transform: scale(1);
 }
