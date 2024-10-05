@@ -44,11 +44,18 @@
               "
               :alt="image.tag_string"
               :class="[
-                'transform transition-all duration-500 ease-out',
+                'transform transition-all duration-1000 ease-out',
                 { loaded: loadedImages[index] },
-                { 'opacity-100': imageInView[index] },
-                { 'opacity-0': !imageInView[index] },
-                `delay-${index}`,
+                { 'translate-y-0 opacity-100': imageInView[index] },
+                {
+                  'translate-y-1/4 opacity-0':
+                    !imageInView[index] && scrollDirection === 'down',
+                },
+                {
+                  '-translate-y-1/4 opacity-0':
+                    !imageInView[index] && scrollDirection === 'up',
+                },
+                `delay-${index % 5}`,
               ]"
               @load="onImageLoad(index, image)"
             />
@@ -100,7 +107,6 @@ const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 let lastScrollTop = 0;
-let loadingQueue = [];
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -111,8 +117,6 @@ const fetchImages = async () => {
     images.value = data;
     loadedImages.value = new Array(data.length).fill(false);
     imageInView.value = new Array(data.length).fill(false);
-    loadingQueue = [...Array(data.length).keys()];
-    loadNextImage();
   } catch (error) {
     console.error("Error fetching images:", error);
   } finally {
@@ -120,23 +124,8 @@ const fetchImages = async () => {
   }
 };
 
-const loadNextImage = () => {
-  if (loadingQueue.length > 0) {
-    const index = loadingQueue.shift();
-    const img = new Image();
-    img.src = images.value[index].media_asset.variants[1].url;
-    img.onload = () => {
-      loadedImages.value[index] = true;
-      cacheImage(images.value[index].id, images.value[index].file_url);
-      nextTick(() => {
-        loadNextImage();
-      });
-    };
-  }
-};
-
 const onImageLoad = (index, image) => {
-  // This function is now only used for the enlarged image
+  loadedImages.value[index] = true;
   cacheImage(image.id, image.file_url);
 };
 
@@ -233,38 +222,26 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* Update the delay classes for sequential loading */
+/* Add staggered delay classes */
 .delay-0 {
   transition-delay: 0ms;
 }
+
 .delay-1 {
-  transition-delay: 50ms;
-}
-.delay-2 {
   transition-delay: 100ms;
 }
-.delay-3 {
-  transition-delay: 150ms;
-}
-.delay-4 {
+
+.delay-2 {
   transition-delay: 200ms;
 }
-.delay-5 {
-  transition-delay: 250ms;
-}
-.delay-6 {
+
+.delay-3 {
   transition-delay: 300ms;
 }
-.delay-7 {
-  transition-delay: 350ms;
-}
-.delay-8 {
+
+.delay-4 {
   transition-delay: 400ms;
 }
-.delay-9 {
-  transition-delay: 450ms;
-}
-/* Add more delay classes as needed */
 
 .container {
   padding: 2.5%;
