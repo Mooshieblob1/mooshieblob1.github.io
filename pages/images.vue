@@ -57,6 +57,9 @@ toggleRainEffect(false);
 
 definePageMeta({
   layout: 'no-rain',
+  layoutTransition:{
+    name: 'slide-in'
+  }
 });
 
 const images = ref([]);
