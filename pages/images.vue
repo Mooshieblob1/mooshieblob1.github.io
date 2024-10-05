@@ -37,23 +37,20 @@
           @click="openImage(image)"
         >
           <div ref="imageRefs" :data-index="index" class="h-full">
-            <img
+            <v-lazy-image
               :src="image.media_asset.variants[2].url"
+              :src-placeholder="
+                getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'
+              "
               :alt="image.tag_string"
               :class="[
-                'transform transition-all duration-1000 ease-out',
-                { 'translate-y-0 opacity-100': imageInView[index] },
-                {
-                  'translate-y-1/4 opacity-0':
-                    !imageInView[index] && scrollDirection === 'down',
-                },
-                {
-                  '-translate-y-1/4 opacity-0':
-                    !imageInView[index] && scrollDirection === 'up',
-                },
-                `delay-${index % 5}`,
+                'transform transition-all duration-500 ease-out',
+                { loaded: loadedImages[index] },
+                { 'opacity-100': imageInView[index] },
+                { 'opacity-0': !imageInView[index] },
+                `delay-${index}`,
               ]"
-              loading="lazy"
+              @load="onImageLoad(index, image)"
             />
           </div>
         </div>
@@ -65,7 +62,7 @@
           <div v-if="!enlargedImageLoaded" class="spinner"></div>
           <img
             v-show="enlargedImageLoaded"
-            :src="selectedImage.file_url"
+            :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
             :alt="selectedImage.tag_string"
             :class="['enlarged-image', { loaded: enlargedImageLoaded }]"
             @load="onEnlargedImageLoad"
@@ -77,9 +74,10 @@
 </template>
 
 <script setup>
-import { onMounted, ref, onUnmounted, computed } from "vue";
+import { onMounted, ref, onUnmounted, nextTick } from "vue";
 import { useRainEffect } from "~/composables/useRainEffect";
 import "~/assets/css/output.css";
+import VLazyImage from "v-lazy-image";
 
 const { toggleRainEffect } = useRainEffect();
 
@@ -95,12 +93,14 @@ definePageMeta({
 
 const images = ref([]);
 const selectedImage = ref(null);
-const imageInView = ref({});
+const loadedImages = ref([]);
+const imageInView = ref([]);
 const imageRefs = ref([]);
 const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 let lastScrollTop = 0;
+let loadingQueue = [];
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -109,6 +109,10 @@ const fetchImages = async () => {
     const response = await fetch(url);
     const data = await response.json();
     images.value = data;
+    loadedImages.value = new Array(data.length).fill(false);
+    imageInView.value = new Array(data.length).fill(false);
+    loadingQueue = [...Array(data.length).keys()];
+    loadNextImage();
   } catch (error) {
     console.error("Error fetching images:", error);
   } finally {
@@ -116,9 +120,30 @@ const fetchImages = async () => {
   }
 };
 
+const loadNextImage = () => {
+  if (loadingQueue.length > 0) {
+    const index = loadingQueue.shift();
+    const img = new Image();
+    img.src = images.value[index].media_asset.variants[1].url;
+    img.onload = () => {
+      loadedImages.value[index] = true;
+      cacheImage(images.value[index].id, images.value[index].file_url);
+      nextTick(() => {
+        loadNextImage();
+      });
+    };
+  }
+};
+
+const onImageLoad = (index, image) => {
+  // This function is now only used for the enlarged image
+  cacheImage(image.id, image.file_url);
+};
+
 const openImage = (image) => {
   selectedImage.value = image;
   enlargedImageLoaded.value = false;
+  cacheImage(image.id, image.file_url);
 };
 
 const closeImage = () => {
@@ -130,26 +155,43 @@ const onEnlargedImageLoad = () => {
   enlargedImageLoaded.value = true;
 };
 
+const cacheImage = (id, url) => {
+  localStorage.setItem(`cachedImage_${id}`, url);
+};
+
+const getCachedImageUrl = (id) => {
+  return localStorage.getItem(`cachedImage_${id}`);
+};
+
 const handleScroll = () => {
   const st = window.pageYOffset || document.documentElement.scrollTop;
-  scrollDirection.value = st > lastScrollTop ? "down" : "up";
+  const newDirection = st > lastScrollTop ? "down" : "up";
+  if (newDirection !== scrollDirection.value) {
+    scrollDirection.value = newDirection;
+  }
   lastScrollTop = st <= 0 ? 0 : st;
 };
 
 let observer;
 
 onMounted(() => {
-  fetchImages();
+  fetchImages().then(() => {
+    nextTick(() => {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            const index = parseInt(entry.target.dataset.index);
+            imageInView.value[index] = entry.isIntersecting;
+          });
+        },
+        { threshold: 0.1, rootMargin: "100px" },
+      );
 
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        const index = entry.target.dataset.index;
-        imageInView.value[index] = entry.isIntersecting;
+      imageRefs.value.forEach((ref) => {
+        if (ref) observer.observe(ref);
       });
-    },
-    { threshold: 0.1, rootMargin: "100px" },
-  );
+    });
+  });
 
   window.addEventListener("scroll", handleScroll, { passive: true });
 });
@@ -179,7 +221,7 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.image-item img {
+.v-lazy-image {
   opacity: 0;
   transition:
     opacity 0.3s,
@@ -187,26 +229,42 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.image-item img.loaded {
+.v-lazy-image.loaded {
   opacity: 1;
 }
 
-/* Add staggered delay classes */
+/* Update the delay classes for sequential loading */
 .delay-0 {
   transition-delay: 0ms;
 }
 .delay-1 {
-  transition-delay: 100ms;
+  transition-delay: 50ms;
 }
 .delay-2 {
-  transition-delay: 200ms;
+  transition-delay: 100ms;
 }
 .delay-3 {
-  transition-delay: 300ms;
+  transition-delay: 150ms;
 }
 .delay-4 {
+  transition-delay: 200ms;
+}
+.delay-5 {
+  transition-delay: 250ms;
+}
+.delay-6 {
+  transition-delay: 300ms;
+}
+.delay-7 {
+  transition-delay: 350ms;
+}
+.delay-8 {
   transition-delay: 400ms;
 }
+.delay-9 {
+  transition-delay: 450ms;
+}
+/* Add more delay classes as needed */
 
 .container {
   padding: 2.5%;
