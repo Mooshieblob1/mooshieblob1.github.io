@@ -5,50 +5,59 @@
 -->
 
 <template>
-    <nav class="bg-transparent p-4 fixed top-0 right-0 w-full">
-        <div class="container mx-auto flex justify-end items-center space-x-4">
-            <div class="relative group">
-                <nuxt-link to="/blog" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
-                    Blog
-                </nuxt-link>
-            </div>
-            <div class="relative group">
-                <a href="https://comfy.mooshieblob.com" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
-                    ComfyUI
-                </a>
-            </div>
-            <div class="relative group">
-                <nuxt-link to="/images" class="text-white hover:text-yellow-400 hover:glow transition duration-700">
-                    Images
-                </nuxt-link>
-            </div>
-        </div>
-    </nav>
+  <nav class="fixed right-0 top-0 w-full bg-transparent p-4">
+    <div class="container mx-auto flex items-center justify-end space-x-4">
+      <div class="group relative">
+        <nuxt-link
+          to="/blog"
+          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
+        >
+          Blog
+        </nuxt-link>
+      </div>
+      <div class="group relative">
+        <a
+          href="https://comfy.mooshieblob.com"
+          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
+        >
+          ComfyUI
+        </a>
+      </div>
+      <div class="group relative">
+        <nuxt-link
+          to="/images"
+          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
+        >
+          Images
+        </nuxt-link>
+      </div>
+    </div>
+  </nav>
 </template>
 
 <script>
-import '~/assets/css/output.css';
+import "~/assets/css/output.css";
 
 export default {
-    name: 'Navbar'
-}
+  name: "Navbar",
+};
 </script>
 
 <style>
 /* Add any additional styles here if needed */
 @keyframes glow {
-    0% {
-        text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
-    }
-    50% {
-        text-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.5);
-    }
-    100% {
-        text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
-    }
+  0% {
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 10px 5px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0.5);
+  }
 }
 
 .hover\:glow:hover {
-    animation: glow 1s infinite;
+  animation: glow 1s infinite;
 }
 </style>
