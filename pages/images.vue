@@ -165,11 +165,13 @@ onUnmounted(() => {
 .image-item {
     position: relative;
     overflow: hidden;
+    border-radius: 4px; /* Add this line for slightly rounded corners */
 }
 
 .v-lazy-image {
     opacity: 0;
     transition: opacity 0.3s, transform 0.5s ease-in-out;
+    border-radius: 4px; /* Add this line for slightly rounded corners */
 }
 
 .v-lazy-image.loaded {
@@ -232,6 +234,7 @@ onUnmounted(() => {
     width: fit-content;
     max-width: unset;
     transition: transform 0.3s ease-in-out;
+    border-radius: 4px; /* Add this line for slightly rounded corners */
 }
 
 .image-overlay {
@@ -253,6 +256,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: scale(0.9);
     transition: opacity 0.3s ease, transform 0.3s ease;
+    border-radius: 8px; /* Add this line for slightly rounded corners (a bit more rounded for the enlarged image) */
 }
 
 .enlarged-image.loaded {
