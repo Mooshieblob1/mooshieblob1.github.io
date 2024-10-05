@@ -41,16 +41,19 @@
       <div v-if="!hasMore" class="mt-4 text-center text-gray-300">
         No more posts to load
       </div>
-      <div ref="intersectionTarget" class="mt-4 h-16 bg-gray-800 opacity-0">
-        Intersection target
-      </div>
+      <div ref="intersectionTarget" class="h-10 w-full"></div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from "vue";
-import { useRoute } from "vue-router";
+import { ref, onMounted, onUnmounted } from "vue";
+import { useRainEffect } from "~/composables/useRainEffect";
+
+const { toggleRainEffect } = useRainEffect();
+
+// Disable rain effect for this page
+toggleRainEffect(false);
 
 interface Post {
   id: number;
@@ -60,7 +63,6 @@ interface Post {
   isExpanded: boolean;
 }
 
-const route = useRoute();
 const posts = ref<Post[]>([]);
 const page = ref(1);
 const loading = ref(false);
@@ -68,51 +70,24 @@ const hasMore = ref(true);
 const intersectionTarget = ref<HTMLElement | null>(null);
 
 const fetchPosts = async () => {
-  if (loading.value || !hasMore.value) {
-    console.log(
-      "Fetching stopped: loading =",
-      loading.value,
-      "hasMore =",
-      hasMore.value,
-    );
-    return;
-  }
+  if (loading.value || !hasMore.value) return;
 
   loading.value = true;
-  console.log("Fetching posts for page", page.value);
   try {
     const response = await fetch(`/api/posts?page=${page.value}&limit=3`);
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch posts: ${response.status} ${response.statusText}`,
-      );
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log("Received data:", data);
 
-    if (Array.isArray(data.posts) && data.posts.length > 0) {
-      posts.value = [
-        ...posts.value,
-        ...data.posts.map((post: Omit<Post, "isExpanded">) => ({
-          ...post,
-          isExpanded: false,
-        })),
-      ];
-      hasMore.value = data.hasMore;
-      page.value++;
-      console.log(
-        "Updated posts. Total count:",
-        posts.value.length,
-        "hasMore:",
-        hasMore.value,
-      );
-    } else {
-      console.log("No more posts received");
-      hasMore.value = false;
-    }
+    posts.value = [
+      ...posts.value,
+      ...data.posts.map((post: Post) => ({ ...post, isExpanded: false })),
+    ];
+    hasMore.value = data.hasMore;
+    page.value++;
   } catch (error) {
     console.error("Error fetching posts:", error);
-    hasMore.value = false;
   } finally {
     loading.value = false;
   }
@@ -125,49 +100,24 @@ const togglePost = (id: number) => {
   }
 };
 
-let observer: IntersectionObserver | null = null;
+let observer: IntersectionObserver;
 
-const setupIntersectionObserver = () => {
-  if (observer) {
-    observer.disconnect();
-  }
-
+onMounted(() => {
   observer = new IntersectionObserver(
-    ([entry]) => {
-      console.log(
-        "Intersection observed:",
-        entry.isIntersecting,
-        "loading:",
-        loading.value,
-        "hasMore:",
-        hasMore.value,
-      );
-      if (entry.isIntersecting && !loading.value && hasMore.value) {
+    (entries) => {
+      if (entries[0].isIntersecting && !loading.value && hasMore.value) {
         fetchPosts();
       }
     },
-    { rootMargin: "100px", threshold: 0.1 },
+    { threshold: 0.1 },
   );
 
   if (intersectionTarget.value) {
     observer.observe(intersectionTarget.value);
-    console.log("Intersection observer set up");
-  } else {
-    console.warn("Intersection target not found");
   }
-};
 
-const resetAndFetch = () => {
-  posts.value = [];
-  page.value = 1;
-  hasMore.value = true;
+  // Initial fetch
   fetchPosts();
-};
-
-onMounted(() => {
-  console.log("Component mounted");
-  resetAndFetch();
-  setupIntersectionObserver();
 });
 
 onUnmounted(() => {
@@ -176,16 +126,12 @@ onUnmounted(() => {
   }
 });
 
-watch(
-  () => route.path,
-  (newPath, oldPath) => {
-    if (newPath === "/blog" && oldPath !== "/blog") {
-      console.log("Returned to blog page, resetting and fetching posts");
-      resetAndFetch();
-      setupIntersectionObserver();
-    }
+definePageMeta({
+  layout: "no-rain",
+  layoutTransition: {
+    name: "slide-in",
   },
-);
+});
 </script>
 
 <style scoped>
