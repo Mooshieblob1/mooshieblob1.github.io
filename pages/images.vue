@@ -23,7 +23,13 @@
           class="ml-2 inline-block h-4 w-4"
         />
       </p>
-      <div class="image-grid">
+
+      <!-- Loading Spinner for initial load -->
+      <div v-if="isLoading" class="flex h-64 items-center justify-center">
+        <div class="spinner"></div>
+      </div>
+
+      <div v-else class="image-grid">
         <div
           v-for="(image, index) in images"
           :key="image.id"
@@ -56,9 +62,13 @@
           </div>
         </div>
       </div>
+
       <transition name="fade">
         <div v-if="selectedImage" class="image-overlay" @click="closeImage">
+          <!-- Loading Spinner for enlarged image -->
+          <div v-if="!enlargedImageLoaded" class="spinner"></div>
           <img
+            v-show="enlargedImageLoaded"
             :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
             :alt="selectedImage.tag_string"
             :class="['enlarged-image', { loaded: enlargedImageLoaded }]"
@@ -95,9 +105,11 @@ const imageInView = ref([]);
 const imageRefs = ref([]);
 const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
+const isLoading = ref(true);
 let lastScrollTop = 0;
 
 const fetchImages = async () => {
+  isLoading.value = true;
   const url = "https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/";
   try {
     const response = await fetch(url);
@@ -107,6 +119,8 @@ const fetchImages = async () => {
     imageInView.value = new Array(data.length).fill(false);
   } catch (error) {
     console.error("Error fetching images:", error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -193,7 +207,7 @@ onUnmounted(() => {
 .image-item {
   position: relative;
   overflow: hidden;
-  border-radius: 4px; /* Add this line for slightly rounded corners */
+  border-radius: 4px;
 }
 
 .v-lazy-image {
@@ -201,7 +215,7 @@ onUnmounted(() => {
   transition:
     opacity 0.3s,
     transform 0.5s ease-in-out;
-  border-radius: 4px; /* Add this line for slightly rounded corners */
+  border-radius: 4px;
 }
 
 .v-lazy-image.loaded {
@@ -264,7 +278,7 @@ onUnmounted(() => {
   width: fit-content;
   max-width: unset;
   transition: transform 0.3s ease-in-out;
-  border-radius: 4px; /* Add this line for slightly rounded corners */
+  border-radius: 4px;
 }
 
 .image-overlay {
@@ -288,11 +302,29 @@ onUnmounted(() => {
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
-  border-radius: 8px; /* Add this line for slightly rounded corners (a bit more rounded for the enlarged image) */
+  border-radius: 8px;
 }
 
 .enlarged-image.loaded {
   opacity: 1;
   transform: scale(1);
+}
+
+.spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 4px solid #ffcc00;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 </style>
