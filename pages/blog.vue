@@ -128,9 +128,6 @@ onUnmounted(() => {
 
 definePageMeta({
   layout: "no-rain",
-  layoutTransition: {
-    name: "slide-in",
-  },
 });
 </script>
 

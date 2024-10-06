@@ -1,18 +1,28 @@
 <template>
   <div class="min-h-screen bg-gray-900 p-8">
     <NuxtLink to="/">
-      <img src="~/assets/images/bloblogo.webp" alt="logo" class="logo h-[5vw] w-auto mx-auto mb-12 mt-12">
+      <img
+        src="~/assets/images/bloblogo.webp"
+        alt="logo"
+        class="logo mx-auto mb-12 mt-12 h-[5vw] w-auto"
+      />
     </NuxtLink>
-    <div v-if="loading" class="max-w-4xl mx-auto text-center text-yellow-400">
+    <div v-if="loading" class="mx-auto max-w-4xl text-center text-yellow-400">
       Loading...
     </div>
-    <div v-else-if="error" class="max-w-4xl mx-auto text-center text-red-400">
+    <div v-else-if="error" class="mx-auto max-w-4xl text-center text-red-400">
       {{ error }}
     </div>
-    <div v-else-if="post" class="max-w-4xl mx-auto bg-gray-800 bg-opacity-50 backdrop-filter backdrop-blur-lg rounded-lg overflow-hidden shadow-lg p-8 border border-gray-700">
-      <h1 class="text-4xl font-bold text-yellow-400 mb-4">{{ post.title }}</h1>
-      <p class="text-gray-300 mb-8">{{ post.content }}</p>
-      <NuxtLink to="/blog" class="text-yellow-200 hover:text-yellow-100 transition-colors duration-200">
+    <div
+      v-else-if="post"
+      class="mx-auto max-w-4xl overflow-hidden rounded-lg border border-gray-700 bg-gray-800 bg-opacity-50 p-8 shadow-lg backdrop-blur-lg backdrop-filter"
+    >
+      <h1 class="mb-4 text-4xl font-bold text-yellow-400">{{ post.title }}</h1>
+      <p class="mb-8 text-gray-300">{{ post.content }}</p>
+      <NuxtLink
+        to="/blog"
+        class="text-yellow-200 transition-colors duration-200 hover:text-yellow-100"
+      >
         &larr; Back to Blog
       </NuxtLink>
     </div>
@@ -20,8 +30,14 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { useRainEffect } from "~/composables/useRainEffect";
+
+const { toggleRainEffect } = useRainEffect();
+
+// Disable rain effect for this page
+toggleRainEffect(false);
 
 interface Post {
   id: number;
@@ -43,13 +59,18 @@ onMounted(async () => {
     }
     post.value = await response.json();
   } catch (err) {
-    console.error('Error fetching post:', err);
-    error.value = err instanceof Error ? err.message : 'An unknown error occurred';
+    console.error("Error fetching post:", err);
+    error.value =
+      err instanceof Error ? err.message : "An unknown error occurred";
     // If you want to redirect to a 404 page, you can use:
     // await navigateTo('/404');
   } finally {
     loading.value = false;
   }
+});
+
+definePageMeta({
+  layout: "no-rain",
 });
 </script>
 
