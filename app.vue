@@ -12,7 +12,9 @@
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {
-  transition: opacity 0.8s ease, filter 0.8s ease;
+  transition:
+    opacity 0.8s ease,
+    filter 0.8s ease;
 }
 
 .page-enter-from,
@@ -51,7 +53,8 @@
 }
 
 /* Ensure layout elements don't move during transitions */
-.layout-wrapper, .social-links {
+.layout-wrapper,
+.social-links {
   transition: none;
 }
 </style>

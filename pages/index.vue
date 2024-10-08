@@ -7,24 +7,24 @@
         src="/assets/images/bg.webp"
         alt="Background Image"
         class="h-4 w-auto md:h-6 lg:h-9"
-      >
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import SocialLinks from '~/components/SocialLinks.vue';
+import SocialLinks from "~/components/SocialLinks.vue";
 
 useHead({
   title: "Mooshieblob",
   meta: [
-    { name: "description", content: "My links page" },
-    { property: "og:title", content: "Mooshieblobsite" },
-    { property: "og:description", content: "My links page" },
-    { property: "og:image", content: "/assets/images/page.png" },
+    { name: "description", content: "Am blob" },
+    { property: "og:title", content: "Blob" },
+    { property: "og:description", content: "Blob" },
+    { property: "og:image", content: "~/assets/images/page.png" },
     { name: "twitter:card", content: "summary_large_image" },
   ],
-})
+});
 </script>
 
 <style scoped>
