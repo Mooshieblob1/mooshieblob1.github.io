@@ -13,8 +13,8 @@
 .page-enter-active,
 .page-leave-active {
   transition:
-    opacity 0.8s ease,
-    filter 0.8s ease;
+    opacity 0.5s ease,
+    filter 0.5s ease;
 }
 
 .page-enter-from,
@@ -37,7 +37,7 @@
 /* Specific slide-in transition for layouts */
 .slide-in-enter-active,
 .slide-in-leave-active {
-  transition: all 0.8s;
+  transition: all 0.5s;
 }
 
 .slide-in-enter-from {
