@@ -1,7 +1,7 @@
 ---
-title: "My First Blog Post"
-date: 2023-10-05
-description: "Welcome to my blog! This is my very first post, where I share why I started this blog and what you can expect from it."
+title: My First Blog Post
+date: 2023-10-05T00:00:00.000Z
+description: Welcome to my blog! This is my very first post, where I share why I started this blog and what you can expect from it.
 ---
 
 Welcome to my blog! This is my very first post, and I'm excited to start this journey with you.
