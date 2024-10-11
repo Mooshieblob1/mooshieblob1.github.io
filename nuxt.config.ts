@@ -31,6 +31,7 @@ export default defineNuxtConfig({
     "@nuxtjs/google-fonts",
     "@nuxt/icon",
     "@nuxt/content",
+    "@nuxthq/studio",
   ],
 
   css: ["~/assets/css/style.css"],
