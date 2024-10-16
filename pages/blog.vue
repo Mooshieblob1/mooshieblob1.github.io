@@ -13,25 +13,18 @@
         <div
           class="overflow-hidden rounded-lg border border-gray-700 bg-gray-800 bg-opacity-50 shadow-lg backdrop-blur-lg backdrop-filter transition-all duration-300 hover:shadow-xl"
         >
-          <div class="cursor-pointer p-6" @click="togglePost(post.id)">
+          <div class="cursor-pointer p-6" @click="openPost(post)">
             <h2 class="mb-2 text-2xl font-semibold text-yellow-300">
               {{ post.title }}
             </h2>
             <p class="mb-4 text-gray-300">{{ post.excerpt }}</p>
             <div class="flex items-center justify-between">
-              <NuxtLink
-                :to="`/blog/${post.id}`"
+              <span
                 class="text-yellow-200 transition-colors duration-200 hover:text-yellow-100"
               >
                 Read more
-              </NuxtLink>
-              <span class="text-gray-400">
-                {{ post.isExpanded ? "Click to collapse" : "Click to expand" }}
               </span>
             </div>
-          </div>
-          <div v-if="post.isExpanded" class="border-t border-gray-700 p-6">
-            <p class="text-gray-300">{{ post.content }}</p>
           </div>
         </div>
       </div>
@@ -41,13 +34,34 @@
       <div v-if="!hasMore" class="mt-4 text-center text-gray-300">
         No more posts to load
       </div>
-      <div ref="intersectionTarget" class="h-10 w-full"></div>
+      <div ref="infiniteScrollTrigger" class="h-10 w-full"></div>
+    </div>
+
+    <!-- Expanded post overlay -->
+    <div
+      v-if="expandedPost"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+    >
+      <div
+        class="max-h-[90vh] w-[90vw] max-w-4xl overflow-y-auto rounded-lg bg-gray-800 p-8"
+      >
+        <h2 class="mb-4 text-3xl font-bold text-yellow-300">
+          {{ expandedPost.title }}
+        </h2>
+        <p class="mb-6 text-gray-300">{{ expandedPost.content }}</p>
+        <button
+          @click="closePost"
+          class="rounded bg-yellow-400 px-4 py-2 text-gray-900 hover:bg-yellow-300"
+        >
+          Close
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { ref, onMounted, onUnmounted, watch } from "vue";
 import { useRainEffect } from "~/composables/useRainEffect";
 
 const { toggleRainEffect } = useRainEffect();
@@ -60,30 +74,27 @@ interface Post {
   title: string;
   excerpt: string;
   content: string;
-  isExpanded: boolean;
 }
 
 const posts = ref<Post[]>([]);
 const page = ref(1);
 const loading = ref(false);
 const hasMore = ref(true);
-const intersectionTarget = ref<HTMLElement | null>(null);
+const infiniteScrollTrigger = ref<HTMLElement | null>(null);
+const expandedPost = ref<Post | null>(null);
 
 const fetchPosts = async () => {
   if (loading.value || !hasMore.value) return;
 
   loading.value = true;
   try {
-    const response = await fetch(`/api/posts?page=${page.value}&limit=3`);
+    const response = await fetch(`/api/posts?page=${page.value}&limit=5`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
 
-    posts.value = [
-      ...posts.value,
-      ...data.posts.map((post: Post) => ({ ...post, isExpanded: false })),
-    ];
+    posts.value = [...posts.value, ...data.posts];
     hasMore.value = data.hasMore;
     page.value++;
   } catch (error) {
@@ -93,29 +104,39 @@ const fetchPosts = async () => {
   }
 };
 
-const togglePost = (id: number) => {
-  const post = posts.value.find((p) => p.id === id);
-  if (post) {
-    post.isExpanded = !post.isExpanded;
-  }
+const openPost = (post: Post) => {
+  expandedPost.value = post;
+  document.body.style.overflow = "hidden";
+};
+
+const closePost = () => {
+  expandedPost.value = null;
+  document.body.style.overflow = "";
 };
 
 let observer: IntersectionObserver;
 
-onMounted(() => {
+const setupIntersectionObserver = () => {
+  if (observer) {
+    observer.disconnect();
+  }
+
   observer = new IntersectionObserver(
     (entries) => {
       if (entries[0].isIntersecting && !loading.value && hasMore.value) {
         fetchPosts();
       }
     },
-    { threshold: 0.1 },
+    { threshold: 0.1, rootMargin: "0px 0px 200px 0px" },
   );
 
-  if (intersectionTarget.value) {
-    observer.observe(intersectionTarget.value);
+  if (infiniteScrollTrigger.value) {
+    observer.observe(infiniteScrollTrigger.value);
   }
+};
 
+onMounted(() => {
+  setupIntersectionObserver();
   // Initial fetch
   fetchPosts();
 });
@@ -124,6 +145,12 @@ onUnmounted(() => {
   if (observer) {
     observer.disconnect();
   }
+});
+
+// Watch for changes in the posts array
+watch(posts, () => {
+  // Re-setup the intersection observer after posts are loaded
+  setupIntersectionObserver();
 });
 
 definePageMeta({
