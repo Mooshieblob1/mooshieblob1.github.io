@@ -8,6 +8,7 @@ import * as $blog from "./routes/blog.tsx";
 import * as $blog_slug_ from "./routes/blog/[slug].tsx";
 import * as $images from "./routes/images.tsx";
 import * as $index from "./routes/index.tsx";
+import * as $BlogPosts from "./islands/BlogPosts.tsx";
 import * as $effects_RainEffect from "./islands/effects/RainEffect.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -21,6 +22,7 @@ const manifest = {
 		"./routes/index.tsx": $index,
 	},
 	islands: {
+		"./islands/BlogPosts.tsx": $BlogPosts,
 		"./islands/effects/RainEffect.tsx": $effects_RainEffect,
 	},
 	baseUrl: import.meta.url,
