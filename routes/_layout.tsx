@@ -5,14 +5,14 @@ import Navbar from "../components/nav/Navbar.tsx";
 
 export default function Layout({ Component }: PageProps): JSX.Element {
 	return (
-		<div class="layout-wrapper">
+		<div class="layout-wrapper relative min-h-screen pb-[footer-height]">
 			<div class="page-wrapper">
 				<Navbar />
 				<main class="main-content">
 					<Component />
 				</main>
-				<WebFooter />
 			</div>
+			<WebFooter class="absolute bottom-0 w-full" />
 		</div>
 	);
 }
