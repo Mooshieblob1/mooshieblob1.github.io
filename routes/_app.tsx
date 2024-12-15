@@ -1,9 +1,14 @@
 import type { JSX } from "preact/jsx-runtime";
-import RainEffect from "../islands/RainEffect.tsx";
+import RainEffect from "../islands/effects/RainEffect.tsx";
 
 export default function App(
-	{ Component }: { Component: () => JSX.Element },
+	{ url, Component }: { url: URL; Component: () => JSX.Element },
 ): JSX.Element {
+	const disableRainRoutes = ["/blog", "/images"];
+	const showRain = !disableRainRoutes.some((route) =>
+		url.pathname.startsWith(route)
+	);
+
 	return (
 		<html>
 			<head>
@@ -21,7 +26,7 @@ export default function App(
 				/>
 			</head>
 			<body>
-				<RainEffect />
+				{showRain && <RainEffect />}
 				<Component />
 			</body>
 		</html>
