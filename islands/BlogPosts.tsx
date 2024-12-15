@@ -15,7 +15,7 @@ export default function BlogPosts(
 	const [loading, setLoading] = useState(false);
 	const [hasMore, setHasMore] = useState(true);
 	const [expandedPost, setExpandedPost] = useState<BlogPost | null>(null);
-	const [scrolling, setIsScrolling] = useState(false);
+	const [isScrolling, setIsScrolling] = useState(false);
 	const observerTarget = useRef<HTMLDivElement>(null);
 	const scrollTimer = useRef<number | null>(null);
 
@@ -97,12 +97,12 @@ export default function BlogPosts(
 	}, [expandedPost]);
 
 	useEffect(() => {
-		if (scrolling) {
+		if (isScrolling) {
 			globalThis.document.body.classList.add("is-scrolling");
 		} else {
 			globalThis.document.body.classList.remove("is-scrolling");
 		}
-	}, [scrolling]);
+	}, [isScrolling]);
 
 	return (
 		<>
