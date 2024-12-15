@@ -16,13 +16,13 @@ export const handler: Handlers<BlogPost> = {
 		try {
 			const content = Deno.readFileSync(`static/content/blog/${slug}.md`);
 			const textContent = new TextDecoder().decode(content);
-			const { attributes, body } = extract(textContent);
+			const { attrs, body } = extract(textContent);
 
 			const renderedContent = marked.parse(body);
 
 			return ctx.render({
-				title: (attributes as { title?: string }).title || "Untitled",
-				excerpt: (attributes as { excerpt?: string }).excerpt || "",
+				title: (attrs as { title?: string }).title || "Untitled",
+				excerpt: (attrs as { excerpt?: string }).excerpt || "",
 				content: renderedContent.toString(),
 			});
 		} catch {
