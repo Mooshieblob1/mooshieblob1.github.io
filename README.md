@@ -33,7 +33,8 @@ Feel free to reach out if you have any questions or intriguing data challenges
 to tackle together.
 
 If you have any questions or would like to collaborate, feel free to reach out
-to me at [blob@mooshieblob.com](mailto:blob@mooshieblob.com) or mooshieblob on
-Discord.
+to me at:
+[![Email](https://img.shields.io/badge/Email-blob%40mooshieblob.com-blue?logo=gmail)](mailto:blob@mooshieblob.com)
+![Discord](https://img.shields.io/badge/Discord-mooshieblob-7289DA?logo=discord)
 
 Happy data exploration!
