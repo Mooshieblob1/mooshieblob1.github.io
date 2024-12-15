@@ -1,6 +1,27 @@
 import type { JSX } from "preact/jsx-runtime";
-import BlobLogo from "./BlobLogo.tsx";
-import Icon from "./Icon.tsx";
+import BlobLogo from "./logo/BlobLogo.tsx";
+
+interface IconProps {
+	name: string;
+	class?: string;
+	style?: Record<string, string>;
+}
+
+function Icon(
+	{ name, class: className, style }: IconProps,
+): JSX.Element {
+	const iconMap: Record<string, string> = {
+		"mdi:twitter": "fa-brands fa-x-twitter",
+		"mdi:github": "fa-brands fa-github",
+	};
+
+	return (
+		<i
+			class={`${iconMap[name] || ""} ${className || ""}`}
+			style={style}
+		/>
+	);
+}
 
 export default function SocialLinks(): JSX.Element {
 	return (

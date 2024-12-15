@@ -1,7 +1,7 @@
 import type { PageProps } from "$fresh/server.ts";
 import type { JSX } from "preact/jsx-runtime";
-import Navbar from "../components/Navbar.tsx";
-import WebFooter from "../components/WebFooter.tsx";
+import WebFooter from "../components/footer/WebFooter.tsx";
+import Navbar from "../components/nav/Navbar.tsx";
 
 export default function Layout({ Component }: PageProps): JSX.Element {
 	return (
