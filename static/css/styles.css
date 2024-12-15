@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root,
+  ::before,
+  ::after {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #02061a;
+    color: #ffffff;
+    font-family: "Roboto", Arial, sans-serif;
+  }
+
+  nav {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    z-index: 999;
+  }
+
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    color: #ffffff;
+    text-align: center;
+    padding: 20px 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 999;
+  }
+
+  svg {
+    fill: currentColor;
+  }
+
+  @media screen and (max-width: 950px) {
+    .bg-girl {
+      height: 70vh;
+      bottom: 3vh;
+    }
+  }
+
+  @media screen and (max-width: 770px) {
+    .bg-girl {
+      height: 40vh;
+      bottom: 3vh;
+    }
+  }
+
+  .bg-girl {
+    height: 90vh;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    z-index: 998;
+  }
+
+  .footer-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: rgb(174, 174, 174);
+  }
+
+  .ipv6 {
+    height: 18px;
+    margin-left: 10px;
+  }
+
+  .social-links {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 120%;
+    z-index: 10;
+    background-color: rgba(2, 6, 26, 0.5);
+    border-radius: 10px;
+    padding: 10px;
+  }
+
+  .social-links a {
+    margin: 0 10px;
+    color: #ffcc00;
+    text-decoration: none;
+    transition: 0.4s;
+  }
+
+  .social-links a:hover {
+    opacity: 0.6;
+  }
+
+  .social-links a > img {
+    height: 30px;
+  }
+
+  .social-links > img {
+    width: 250px;
+    margin-bottom: 20px;
+  }
+
+  .rain-container {
+    @apply fixed top-0 left-0 w-full h-full z-[2] pointer-events-none;
+  }
+
+  .drop {
+    @apply absolute pointer-events-none;
+    width: 15px;
+    height: 120px;
+    animation: drop 0.5s linear infinite;
+  }
+
+  .stem {
+    @apply w-[1px] h-[60%] ml-[7px];
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.25));
+    animation: stem 0.5s linear infinite;
+  }
+
+  .splat {
+    @apply aspect-[3/2] border-t-2 border-dotted border-white/50 rounded-full opacity-100 scale-0;
+    animation: splat 0.5s linear infinite;
+  }
+
+  @keyframes drop {
+    0% { transform: translateY(0); }
+    75% { transform: translateY(90vh); }
+    100% { transform: translateY(90vh); }
+  }
+
+  @keyframes stem {
+    0% { opacity: 1; }
+    65% { opacity: 1; }
+    75% { opacity: 0; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes splat {
+    0% { opacity: 1; transform: scale(0); }
+    80% { opacity: 1; transform: scale(0); }
+    90% { opacity: 0.5; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.5); }
+  }
+}
