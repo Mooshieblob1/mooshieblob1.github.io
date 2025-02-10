@@ -1,7 +1,7 @@
 <template>
   <footer class="footer-container">
     <div class="footer-text">
-      <span>© 2024 Mooshieblob</span>
+      <span>© 2025 Mooshieblob</span>
       <a
         id="ipv6"
         href="https://iplocation.io/ipv6-compatibility-checker?url=referer"
