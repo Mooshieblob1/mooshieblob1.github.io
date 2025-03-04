@@ -8,9 +8,7 @@
       />
     </NuxtLink>
     <div class="container mx-auto">
-      <p class="pb-4 text-center">
-        This is a smaller selection of my posts.
-      </p>
+      <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
 
       <!-- Loading Spinner for initial load -->
       <div v-if="isLoading" class="flex h-64 items-center justify-center">
