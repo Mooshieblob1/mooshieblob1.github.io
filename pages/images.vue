@@ -9,19 +9,7 @@
     </NuxtLink>
     <div class="container mx-auto">
       <p class="pb-4 text-center">
-        This is a smaller selection of my SFW posts. To see more, go to
-        <a
-          href="https://aibooru.online/posts?tags=user%3ABlob"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <strong><u>here</u></strong>
-        </a>
-        <img
-          src="~/assets/icons/aibooru.svg"
-          alt="AIBooru Logo"
-          class="ml-2 inline-block h-4 w-4"
-        />
+        This is a smaller selection of my SFW posts.
       </p>
 
       <!-- Loading Spinner for initial load -->
