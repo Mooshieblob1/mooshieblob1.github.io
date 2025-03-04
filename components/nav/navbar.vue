@@ -16,14 +16,6 @@
         </nuxt-link>
       </div>
       <div class="group relative">
-        <a
-          href="https://comfy.mooshieblob.com"
-          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
-        >
-          ComfyUI
-        </a>
-      </div>
-      <div class="group relative">
         <nuxt-link
           to="/images"
           class="hover:glow text-white transition duration-700 hover:text-yellow-400"

@@ -111,7 +111,7 @@ const fetchPosts = async () => {
       console.log("No posts found");
       hasMore.value = false;
     } else {
-      posts.value = [...posts.value, ...fetchedPosts];
+      posts.value = [...posts.value, ...(fetchedPosts as Post[])];
       hasMore.value = fetchedPosts.length === limit;
       page.value++;
     }
@@ -122,7 +122,9 @@ const fetchPosts = async () => {
   }
 };
 
-const truncateText = (text: string) => {
+const truncateText = (text: string | undefined) => {
+  if (!text) return "";
+
   const words = text.split(" ");
   if (words.length > 10) {
     return words.slice(0, 10).join(" ") + "...";
