@@ -9,7 +9,7 @@
     </NuxtLink>
     <div class="container mx-auto">
       <p class="pb-4 text-center">
-        This is a smaller selection of my SFW post!
+        This is a smaller selection of my SFW post.
       </p>
 
       <!-- Loading Spinner for initial load -->
