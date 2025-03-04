@@ -30,7 +30,6 @@ export default {
 <style scoped>
 .footer-container {
   background-color: transparent;
-  backdrop-filter: blur(10px);
   text-align: center;
   padding: 20px;
   text-shadow: 0 0 8px black;

@@ -23,7 +23,13 @@ export default defineNuxtConfig({
     layoutTransition: false,
   },
 
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+
+    timeline: {
+      enabled: true,
+    },
+  },
 
   modules: [
     "@nuxtjs/tailwindcss",
