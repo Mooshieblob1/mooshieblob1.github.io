@@ -3,19 +3,6 @@
     <BlobLogo />
     <div class="social-icons flex">
       <a
-        href="https://safe.aibooru.online/posts?tags=user%3ABlob"
-        target="_blank"
-        rel="noopener"
-        class="mr-2"
-      >
-        <img
-          src="/assets/icons/aibooru.svg"
-          alt="AIBooru"
-          class="social-icon"
-          style="margin-top: 4px; width: 35px; height: 35px"
-        />
-      </a>
-      <a
         href="https://x.com/mooshieblob"
         target="_blank"
         rel="noopener"
@@ -56,5 +43,5 @@
 </template>
 
 <script setup lang="ts">
-import BlobLogo from "~/components/logo/bloblogo.vue";
+import BlobLogo from "./logo/bloblogo.vue";
 </script>
