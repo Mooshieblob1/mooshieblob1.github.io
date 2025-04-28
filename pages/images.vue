@@ -141,10 +141,23 @@ const getCachedImageUrl = (id) => {
 const handleScroll = () => {
   const st = window.pageYOffset || document.documentElement.scrollTop;
   const newDirection = st > lastScrollTop ? "down" : "up";
+
   if (newDirection !== scrollDirection.value) {
     scrollDirection.value = newDirection;
   }
+
   lastScrollTop = st <= 0 ? 0 : st;
+
+  // 🔥 Manual fallback: Check which images are in view manually
+  imageRefs.value.forEach((ref, index) => {
+    if (ref) {
+      const rect = ref.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight + 300 && rect.bottom > -300;
+      if (inView) {
+        imageInView.value[index] = true;
+      }
+    }
+  });
 };
 
 let observer;
