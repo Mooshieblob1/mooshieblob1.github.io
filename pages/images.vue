@@ -159,11 +159,19 @@ onMounted(() => {
             imageInView.value[index] = entry.isIntersecting;
           });
         },
-        { threshold: 0.1, rootMargin: "100px" },
+        { threshold: 0.05, rootMargin: "300px 0px 300px 0px" },
       );
 
       imageRefs.value.forEach((ref) => {
         if (ref) observer.observe(ref);
+      });
+
+      // 🔥 Force initial intersection check
+      observer.takeRecords().forEach((entry) => {
+        const index = parseInt(entry.target.dataset.index);
+        if (entry.isIntersecting) {
+          imageInView.value[index] = true;
+        }
       });
     });
   });
