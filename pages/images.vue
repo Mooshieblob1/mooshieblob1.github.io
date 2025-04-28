@@ -26,7 +26,7 @@
             <v-lazy-image
               :src="image.media_asset.variants[2].url"
               :src-placeholder="
-                getCachedImageUrl(image.id) || '/assets/images/placeholder.svg'
+                getCachedImageUrl(image.id) || '/images/placeholder.svg'
               "
               :alt="image.tag_string"
               :class="[
