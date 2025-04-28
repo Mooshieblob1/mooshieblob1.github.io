@@ -15,18 +15,6 @@
         />
       </a>
       <a
-        href="https://www.patreon.com/c/BlobArts"
-        target="_blank"
-        rel="noopener"
-        class="mr-2"
-      >
-        <Icon
-          name="mdi:patreon"
-          class="social-icon"
-          :style="{ color: '#ffcc00', fontSize: '35px' }"
-        />
-      </a>
-      <a
         href="https://github.com/Mooshieblob1/"
         target="_blank"
         rel="noopener"
