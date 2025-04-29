@@ -9,14 +9,6 @@
     <div class="container mx-auto flex items-center justify-end space-x-4">
       <div class="group relative">
         <nuxt-link
-          to="/blog"
-          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
-        >
-          Blog
-        </nuxt-link>
-      </div>
-      <div class="group relative">
-        <nuxt-link
           to="/images"
           class="hover:glow text-white transition duration-700 hover:text-yellow-400"
         >

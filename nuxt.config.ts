@@ -1,6 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  devtools: { enabled: true },
+  devtools: {
+    enabled: true,
+    timeline: {
+      enabled: true,
+    },
+  },
+
   app: {
     head: {
       title: "Mooshieblob",
@@ -24,19 +30,9 @@ export default defineNuxtConfig({
     layoutTransition: false,
   },
 
-  devtools: {
-    enabled: true,
-
-    timeline: {
-      enabled: true,
-    },
-  },
-
   modules: [
     "@nuxtjs/tailwindcss",
-    "@nuxtjs/color-mode",
     "@nuxtjs/google-fonts",
-    "@nuxt/icon",
     "@nuxt/content",
     "@nuxthq/studio",
   ],
@@ -53,7 +49,7 @@ export default defineNuxtConfig({
   vite: {
     css: {
       preprocessorOptions: {
-        // Add any CSS preprocessor options here if needed
+        // Empty for now, ready if you want SCSS/LESS config later
       },
     },
   },
@@ -66,12 +62,8 @@ export default defineNuxtConfig({
 
   googleFonts: {
     families: {
-      // Add your font families here
+      // (Optional) Define your fonts here
     },
-  },
-
-  colorMode: {
-    classSuffix: "",
   },
 
   compatibilityDate: "2024-10-06",

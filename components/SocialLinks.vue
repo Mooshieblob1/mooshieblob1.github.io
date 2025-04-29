@@ -9,7 +9,7 @@
         class="mr-2"
       >
         <Icon
-          name="mdi:twitter"
+          icon="mdi:twitter"
           class="social-icon"
           :style="{ color: '#ffcc00', fontSize: '35px' }"
         />
@@ -21,7 +21,7 @@
         class="mr-2"
       >
         <Icon
-          name="mdi:github"
+          icon="mdi:github"
           class="social-icon"
           :style="{ color: '#ffcc00', fontSize: '35px' }"
         />
@@ -32,4 +32,5 @@
 
 <script setup lang="ts">
 import BlobLogo from "./logo/bloblogo.vue";
+import { Icon } from "@iconify/vue";
 </script>
