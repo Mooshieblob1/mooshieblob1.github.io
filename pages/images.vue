@@ -50,7 +50,7 @@
         </div>
       </div>
 
-      <transition name="fade">
+      <transition :name="transitionDirection">
         <div
           v-if="selectedImage"
           class="image-overlay"
@@ -133,6 +133,7 @@ const selectedImage = ref(null);
 const loadedImages = ref([]);
 const imageInView = ref([]);
 const imageRefs = ref([]);
+const transitionDirection = ref("fade"); // default fallback
 const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
@@ -157,6 +158,20 @@ const handleSwipe = () => {
     showPrevImage();
   } else if (swipeDistance < -50) {
     showNextImage();
+  }
+};
+
+const handleKeydown = (event) => {
+  if (!selectedImage.value) return;
+
+  const key = event.key.toLowerCase();
+
+  if (key === "arrowleft" || key === "a") {
+    showPrevImage();
+  } else if (key === "arrowright" || key === "d") {
+    showNextImage();
+  } else if (key === "escape") {
+    closeImage();
   }
 };
 
@@ -185,11 +200,13 @@ const openImage = (image) => {
   selectedImage.value = image;
   enlargedImageLoaded.value = false;
   cacheImage(image.id, image.file_url);
+  window.addEventListener("keydown", handleKeydown);
 };
 
 const closeImage = () => {
   selectedImage.value = null;
   enlargedImageLoaded.value = false;
+  window.removeEventListener("keydown", handleKeydown);
 };
 
 const onEnlargedImageLoad = () => {
@@ -206,6 +223,9 @@ const getCachedImageUrl = (id) => {
 
 const showPrevImage = () => {
   if (!selectedImage.value) return;
+
+  transitionDirection.value = "slide-right"; // Moving left, so slide image right
+
   const currentIndex = images.value.findIndex(
     (img) => img.id === selectedImage.value.id,
   );
@@ -218,6 +238,9 @@ const showPrevImage = () => {
 
 const showNextImage = () => {
   if (!selectedImage.value) return;
+
+  transitionDirection.value = "slide-left"; // Moving right, so slide image left
+
   const currentIndex = images.value.findIndex(
     (img) => img.id === selectedImage.value.id,
   );
@@ -324,6 +347,31 @@ onUnmounted(() => {
   .image-grid {
     column-count: 1;
   }
+}
+
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-right-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-right-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
 }
 
 .image-item {
