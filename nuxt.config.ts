@@ -26,8 +26,14 @@ export default defineNuxtConfig({
         },
       ],
     },
-    pageTransition: false,
-    layoutTransition: false,
+    pageTransition: {
+      name: "page",
+      mode: "out-in",
+    },
+    layoutTransition: {
+      name: "layout",
+      mode: "out-in",
+    },
   },
 
   modules: ["@nuxtjs/tailwindcss", "@nuxtjs/google-fonts", "@nuxthq/studio"],

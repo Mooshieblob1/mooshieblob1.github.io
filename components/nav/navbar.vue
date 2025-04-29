@@ -23,6 +23,14 @@
           Submit an Idea
         </nuxt-link>
       </div>
+      <div class="group relative">
+        <nuxt-link
+          to="/about"
+          class="hover:glow text-white transition duration-700 hover:text-yellow-400"
+        >
+          About
+        </nuxt-link>
+      </div>
     </div>
   </nav>
 </template>
