@@ -327,7 +327,7 @@ onUnmounted(() => {
 
 .image-grid {
   column-count: 4;
-  column-gap: 10px;
+  column-gap: 12px;
   padding: 1rem 0;
 }
 
@@ -354,6 +354,7 @@ onUnmounted(() => {
 .slide-right-enter-active,
 .slide-right-leave-active {
   transition: all 0.3s ease;
+  position: absolute;
 }
 
 .slide-left-enter-from {
@@ -376,27 +377,22 @@ onUnmounted(() => {
 
 .image-item {
   break-inside: avoid;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   cursor: pointer;
   overflow: hidden;
   border-radius: 4px;
   transition: transform 0.3s ease-in-out;
-  width: 100%;
   display: inline-block;
+  width: 100%;
 }
 
 .image-item:hover img {
-  transform: scale(1.1);
-}
-
-@media (max-width: 780px) {
-  .image-item {
-    height: 100px;
-  }
+  transform: scale(1.05);
 }
 
 .image-item img,
 .v-lazy-image {
+  display: block;
   width: 100%;
   height: auto;
   object-fit: cover;
@@ -439,8 +435,8 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  padding-top: 80px; /* <-- Reserve space for navbar */
-  padding-bottom: 40px; /* <-- Nice breathing room below */
+  padding-top: 80px;
+  padding-bottom: 40px;
   background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
@@ -485,7 +481,7 @@ onUnmounted(() => {
 
 .close-button {
   position: absolute;
-  top: 30px; /* push it slightly lower below nav bar */
+  top: 30px;
   right: 30px;
   background: none;
   border: none;
@@ -493,7 +489,7 @@ onUnmounted(() => {
   color: white;
   margin-top: 10px;
   cursor: pointer;
-  z-index: 9999; /* higher than your navbar */
+  z-index: 9999;
 }
 
 .nav-arrow {
