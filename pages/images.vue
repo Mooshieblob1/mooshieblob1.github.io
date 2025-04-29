@@ -260,7 +260,7 @@ onMounted(() => {
             imageInView.value[index] = entry.isIntersecting;
           });
         },
-        { threshold: 0.05, rootMargin: "300px 0px 300px 0px" },
+        { threshold: 0.05, rootMargin: "750px 0px 750px 0px" },
       );
 
       imageRefs.value.forEach((ref) => {
@@ -303,20 +303,38 @@ onUnmounted(() => {
 }
 
 .image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
+  column-count: 4;
+  column-gap: 10px;
+  padding: 1rem 0;
+}
+
+@media (max-width: 1200px) {
+  .image-grid {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .image-grid {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 500px) {
+  .image-grid {
+    column-count: 1;
+  }
 }
 
 .image-item {
-  position: relative;
+  break-inside: avoid;
+  margin-bottom: 10px;
+  cursor: pointer;
   overflow: hidden;
   border-radius: 4px;
-  flex: 1 0 auto;
-  margin-bottom: 5px;
-  height: 200px;
-  cursor: pointer;
   transition: transform 0.3s ease-in-out;
+  width: 100%;
+  display: inline-block;
 }
 
 .image-item:hover img {
@@ -329,13 +347,13 @@ onUnmounted(() => {
   }
 }
 
-.image-item img {
+.image-item img,
+.v-lazy-image {
+  width: 100%;
+  height: auto;
   object-fit: cover;
-  height: 100%;
-  width: fit-content;
-  max-width: unset;
-  transition: transform 0.3s ease-in-out;
   border-radius: 4px;
+  transition: transform 0.3s ease-in-out;
 }
 
 .v-lazy-image {
