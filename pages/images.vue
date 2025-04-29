@@ -7,6 +7,7 @@
         class="logo mx-auto mt-16 h-[10vw] w-auto cursor-pointer"
       />
     </NuxtLink>
+
     <div class="container mx-auto">
       <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
 
@@ -30,7 +31,7 @@
               "
               :alt="image.tag_string"
               :class="[
-                'transform transition-all duration-1000 ease-out',
+                'transform transition-all duration-1000 ease-in-out',
                 { loaded: loadedImages[index] },
                 { 'translate-y-0 opacity-100': imageInView[index] },
                 {
@@ -50,9 +51,16 @@
       </div>
 
       <transition name="fade">
-        <div v-if="selectedImage" class="image-overlay" @click="closeImage">
+        <div
+          v-if="selectedImage"
+          class="image-overlay"
+          @click.self="closeImage"
+          @touchstart="onTouchStart"
+          @touchend="onTouchEnd"
+        >
           <!-- Loading Spinner for enlarged image -->
           <div v-if="!enlargedImageLoaded" class="spinner"></div>
+
           <img
             v-show="enlargedImageLoaded"
             :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
@@ -60,6 +68,44 @@
             :class="['enlarged-image', { loaded: enlargedImageLoaded }]"
             @load="onEnlargedImageLoad"
           />
+
+          <!-- Navigation Arrows -->
+          <button class="nav-arrow left" @click.stop="showPrevImage">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="h-8 w-8"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+
+          <button class="nav-arrow right" @click.stop="showNextImage">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              class="h-8 w-8"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+
+          <!-- Close Button -->
+          <button class="close-button" @click.stop="closeImage">×</button>
         </div>
       </transition>
     </div>
@@ -67,14 +113,12 @@
 </template>
 
 <script setup>
-import { onMounted, ref, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, nextTick } from "vue";
 import { useRainEffect } from "~/composables/useRainEffect";
 import "~/assets/css/output.css";
 import VLazyImage from "v-lazy-image";
 
 const { toggleRainEffect } = useRainEffect();
-
-// Disable rain effect for this page
 toggleRainEffect(false);
 
 definePageMeta({
@@ -93,6 +137,28 @@ const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 let lastScrollTop = 0;
+
+// Swipe detection
+const touchStartX = ref(0);
+const touchEndX = ref(0);
+
+const onTouchStart = (e) => {
+  touchStartX.value = e.changedTouches[0].screenX;
+};
+
+const onTouchEnd = (e) => {
+  touchEndX.value = e.changedTouches[0].screenX;
+  handleSwipe();
+};
+
+const handleSwipe = () => {
+  const swipeDistance = touchEndX.value - touchStartX.value;
+  if (swipeDistance > 50) {
+    showPrevImage();
+  } else if (swipeDistance < -50) {
+    showNextImage();
+  }
+};
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -138,6 +204,29 @@ const getCachedImageUrl = (id) => {
   return localStorage.getItem(`cachedImage_${id}`);
 };
 
+const showPrevImage = () => {
+  if (!selectedImage.value) return;
+  const currentIndex = images.value.findIndex(
+    (img) => img.id === selectedImage.value.id,
+  );
+  const prevIndex =
+    (currentIndex - 1 + images.value.length) % images.value.length;
+  selectedImage.value = images.value[prevIndex];
+  enlargedImageLoaded.value = false;
+  cacheImage(selectedImage.value.id, selectedImage.value.file_url);
+};
+
+const showNextImage = () => {
+  if (!selectedImage.value) return;
+  const currentIndex = images.value.findIndex(
+    (img) => img.id === selectedImage.value.id,
+  );
+  const nextIndex = (currentIndex + 1) % images.value.length;
+  selectedImage.value = images.value[nextIndex];
+  enlargedImageLoaded.value = false;
+  cacheImage(selectedImage.value.id, selectedImage.value.file_url);
+};
+
 const handleScroll = () => {
   const st = window.pageYOffset || document.documentElement.scrollTop;
   const newDirection = st > lastScrollTop ? "down" : "up";
@@ -148,7 +237,6 @@ const handleScroll = () => {
 
   lastScrollTop = st <= 0 ? 0 : st;
 
-  // 🔥 Manual fallback: Check which images are in view manually
   imageRefs.value.forEach((ref, index) => {
     if (ref) {
       const rect = ref.getBoundingClientRect();
@@ -179,7 +267,6 @@ onMounted(() => {
         if (ref) observer.observe(ref);
       });
 
-      // 🔥 Force initial intersection check
       observer.takeRecords().forEach((entry) => {
         const index = parseInt(entry.target.dataset.index);
         if (entry.isIntersecting) {
@@ -211,58 +298,21 @@ onUnmounted(() => {
   opacity: 0;
 }
 
+.container {
+  padding: 5% 2.5%;
+}
+
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
 .image-item {
   position: relative;
   overflow: hidden;
   border-radius: 4px;
-}
-
-.v-lazy-image {
-  opacity: 0;
-  transition:
-    opacity 0.3s,
-    transform 0.5s ease-in-out;
-  border-radius: 4px;
-}
-
-.v-lazy-image.loaded {
-  opacity: 1;
-}
-
-/* Add staggered delay classes */
-.delay-0 {
-  transition-delay: 0ms;
-}
-
-.delay-1 {
-  transition-delay: 100ms;
-}
-
-.delay-2 {
-  transition-delay: 200ms;
-}
-
-.delay-3 {
-  transition-delay: 300ms;
-}
-
-.delay-4 {
-  transition-delay: 400ms;
-}
-
-.container {
-  padding: 2.5%;
-}
-
-.image-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.image-item {
   flex: 1 0 auto;
-  max-width: unset;
   margin-bottom: 5px;
   height: 200px;
   cursor: pointer;
@@ -288,17 +338,49 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
+.v-lazy-image {
+  opacity: 0;
+  transition:
+    opacity 0.3s,
+    transform 0.5s ease-in-out;
+  border-radius: 4px;
+}
+
+.v-lazy-image.loaded {
+  opacity: 1;
+}
+
+/* Add staggered delay classes */
+.delay-0 {
+  transition-delay: 0ms;
+}
+.delay-1 {
+  transition-delay: 100ms;
+}
+.delay-2 {
+  transition-delay: 200ms;
+}
+.delay-3 {
+  transition-delay: 300ms;
+}
+.delay-4 {
+  transition-delay: 400ms;
+}
+
 .image-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  padding-top: 80px; /* <-- Reserve space for navbar */
+  padding-bottom: 40px; /* <-- Nice breathing room below */
   background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 999;
+  z-index: 9999;
+  box-sizing: border-box;
 }
 
 .enlarged-image {
@@ -333,5 +415,44 @@ onUnmounted(() => {
   100% {
     transform: rotate(360deg);
   }
+}
+
+.close-button {
+  position: absolute;
+  top: 30px; /* push it slightly lower below nav bar */
+  right: 30px;
+  background: none;
+  border: none;
+  font-size: 2.5rem;
+  color: white;
+  margin-top: 10px;
+  cursor: pointer;
+  z-index: 9999; /* higher than your navbar */
+}
+
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  font-size: 2rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  z-index: 1000;
+  user-select: none;
+}
+
+.nav-arrow.left {
+  left: 20px;
+}
+
+.nav-arrow.right {
+  right: 20px;
+}
+
+.nav-arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
 }
 </style>

@@ -1,36 +1,22 @@
 <template>
-  <transition name="layout" mode="out-in">
-    <NuxtLayout>
+  <NuxtLayout>
+    <transition name="layout" mode="out-in">
       <transition name="page" mode="out-in">
-        <template v-if="ready">
-          <NuxtPage />
-        </template>
+        <NuxtPage />
       </transition>
-    </NuxtLayout>
-  </transition>
+    </transition>
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-
-const ready = ref(false);
-
-onMounted(() => {
-  requestAnimationFrame(() => {
-    ready.value = true;
-    // Blur any auto-focused elements to prevent blinking cursor
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-  });
-});
+// No script needed anymore!
 </script>
 
 <style>
-/* Layout transitions */
+/* Layout transitions (general page fade) */
 .layout-enter-active,
 .layout-leave-active {
-  transition: opacity 0.8s ease;
+  transition: opacity 1s ease;
 }
 
 .layout-enter-from,
@@ -38,23 +24,24 @@ onMounted(() => {
   opacity: 0;
 }
 
+/* Page transitions (blur + zoom smoothness) */
 .page-enter-active,
 .page-leave-active {
   transition:
-    opacity 0.5s ease,
-    filter 0.5s ease,
-    transform 0.5s ease;
+    opacity 0.7s ease,
+    filter 0.7s ease,
+    transform 0.7s ease;
 }
 
 .page-enter-from,
 .page-leave-to {
   opacity: 0;
-  filter: blur(1rem);
-  transform: scale(1.03) translateY(20px);
+  filter: blur(0.8rem);
+  transform: scale(1.02) translateY(10px);
   pointer-events: none;
 }
 
-/* NEW: Fix unwanted blinking cursor by disabling text selection */
+/* Global cursor fix */
 body {
   user-select: none;
 }
