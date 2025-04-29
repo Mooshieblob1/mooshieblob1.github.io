@@ -18,6 +18,10 @@ const ready = ref(false);
 onMounted(() => {
   requestAnimationFrame(() => {
     ready.value = true;
+    // Blur any auto-focused elements to prevent blinking cursor
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
   });
 });
 </script>
@@ -39,18 +43,25 @@ onMounted(() => {
   transition:
     opacity 0.5s ease,
     filter 0.5s ease,
-    transform 0.5s ease; /* Also animate position! */
+    transform 0.5s ease;
 }
 
 .page-enter-from,
 .page-leave-to {
   opacity: 0;
   filter: blur(1rem);
-  transform: scale(1.03); /* slightly zoomed in when entering/leaving */
-  /* ADD these lines */
-  transform: translateY(20px);
+  transform: scale(1.03) translateY(20px);
   pointer-events: none;
 }
 
-/* You can tweak the scale value if you want a stronger or weaker effect */
+/* NEW: Fix unwanted blinking cursor by disabling text selection */
+body {
+  user-select: none;
+}
+
+/* Allow selecting inside inputs or textareas */
+input,
+textarea {
+  user-select: text;
+}
 </style>
