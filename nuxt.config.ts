@@ -30,12 +30,7 @@ export default defineNuxtConfig({
     layoutTransition: false,
   },
 
-  modules: [
-    "@nuxtjs/tailwindcss",
-    "@nuxtjs/google-fonts",
-    "@nuxt/content",
-    "@nuxthq/studio",
-  ],
+  modules: ["@nuxtjs/tailwindcss", "@nuxtjs/google-fonts", "@nuxthq/studio"],
 
   css: ["~/assets/css/style.css"],
 
