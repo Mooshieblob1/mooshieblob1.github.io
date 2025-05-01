@@ -36,7 +36,12 @@ export default defineNuxtConfig({
     },
   },
 
-  modules: ["@nuxtjs/tailwindcss", "@nuxtjs/google-fonts", "@nuxthq/studio"],
+  modules: [
+    "@nuxtjs/tailwindcss",
+    "@nuxtjs/google-fonts",
+    "@nuxthq/studio",
+    "@vueuse/motion/nuxt",
+  ],
 
   css: ["~/assets/css/style.css"],
 

@@ -17,13 +17,21 @@
       </div>
 
       <div v-else class="image-grid">
-        <div
+        <Motion
           v-for="(image, index) in images"
           :key="image.id"
+          :layout="true"
+          :initial="{ opacity: 0, y: 50 }"
+          :enter="{ opacity: 1, y: 0 }"
+          :transition="{ delay: index * 0.05 }"
           class="image-item"
-          @click="openImage(image)"
+          @click="(e) => openImage(image, e)"
         >
-          <div ref="imageRefs" :data-index="index" class="h-full">
+          <div
+            :ref="(el) => (imageRefs[index] = el)"
+            :data-index="index"
+            class="h-full"
+          >
             <v-lazy-image
               :src="image.media_asset.variants[2].url"
               :src-placeholder="
@@ -31,7 +39,7 @@
               "
               :alt="image.tag_string"
               :class="[
-                'transform transition-all duration-1000 ease-in-out',
+                'transform transition-all duration-1000 ease-out',
                 { loaded: loadedImages[index] },
                 { 'translate-y-0 opacity-100': imageInView[index] },
                 {
@@ -47,73 +55,52 @@
               @load="onImageLoad(index, image)"
             />
           </div>
-        </div>
+        </Motion>
       </div>
 
-      <transition :name="transitionDirection">
-        <div
-          v-if="selectedImage"
-          class="image-overlay"
-          @click.self="closeImage"
-          @touchstart="onTouchStart"
-          @touchend="onTouchEnd"
-        >
-          <!-- Loading Spinner for enlarged image -->
-          <div v-if="!enlargedImageLoaded" class="spinner"></div>
+      <Motion
+        v-if="selectedImage"
+        :layout="true"
+        :initial="{ opacity: 0 }"
+        :enter="{ opacity: 1 }"
+        :leave="{ opacity: 0 }"
+        class="image-overlay"
+        @click.self="closeImage"
+        @touchstart="onTouchStart"
+        @touchend="onTouchEnd"
+      >
+        <!-- Loading Spinner for enlarged image -->
+        <div v-if="!enlargedImageLoaded" class="spinner"></div>
 
+        <Motion
+          :layout="true"
+          :initial="{ opacity: 0, scale: 0.9 }"
+          :enter="{ opacity: 1, scale: 1 }"
+          :leave="{ opacity: 0, scale: 0.9 }"
+          transition="ease"
+        >
           <img
             v-show="enlargedImageLoaded"
             :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
             :alt="selectedImage.tag_string"
-            :class="['enlarged-image', { loaded: enlargedImageLoaded }]"
+            :class="[
+              'enlarged-image',
+              'h-auto max-h-[40vh] w-auto max-w-[40vw] object-contain',
+              { loaded: enlargedImageLoaded },
+            ]"
             @load="onEnlargedImageLoad"
           />
+        </Motion>
 
-          <!-- Navigation Arrows -->
-          <button class="nav-arrow left" @click.stop="showPrevImage">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              class="h-8 w-8"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-
-          <button class="nav-arrow right" @click.stop="showNextImage">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              class="h-8 w-8"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-
-          <!-- Close Button -->
-          <button class="close-button" @click.stop="closeImage">×</button>
-        </div>
-      </transition>
+        <!-- Navigation Arrows -->
+      </Motion>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { animate } from "motion";
 import { useRainEffect } from "~/composables/useRainEffect";
 import "~/assets/css/output.css";
 import VLazyImage from "v-lazy-image";
@@ -133,47 +120,11 @@ const selectedImage = ref(null);
 const loadedImages = ref([]);
 const imageInView = ref([]);
 const imageRefs = ref([]);
-const transitionDirection = ref("fade"); // default fallback
 const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
+const hiddenIndex = ref(null);
 let lastScrollTop = 0;
-
-// Swipe detection
-const touchStartX = ref(0);
-const touchEndX = ref(0);
-
-const onTouchStart = (e) => {
-  touchStartX.value = e.changedTouches[0].screenX;
-};
-
-const onTouchEnd = (e) => {
-  touchEndX.value = e.changedTouches[0].screenX;
-  handleSwipe();
-};
-
-const handleSwipe = () => {
-  const swipeDistance = touchEndX.value - touchStartX.value;
-  if (swipeDistance > 50) {
-    showPrevImage();
-  } else if (swipeDistance < -50) {
-    showNextImage();
-  }
-};
-
-const handleKeydown = (event) => {
-  if (!selectedImage.value) return;
-
-  const key = event.key.toLowerCase();
-
-  if (key === "arrowleft" || key === "a") {
-    showPrevImage();
-  } else if (key === "arrowright" || key === "d") {
-    showNextImage();
-  } else if (key === "escape") {
-    closeImage();
-  }
-};
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -196,17 +147,158 @@ const onImageLoad = (index, image) => {
   cacheImage(image.id, image.file_url);
 };
 
-const openImage = (image) => {
-  selectedImage.value = image;
-  enlargedImageLoaded.value = false;
-  cacheImage(image.id, image.file_url);
-  window.addEventListener("keydown", handleKeydown);
+const openImage = (image, event) => {
+  const target = event.currentTarget.querySelector("img");
+  if (!target) return;
+  const rect = target.getBoundingClientRect();
+  const scrollY = window.scrollY;
+  const scrollX = window.scrollX;
+
+  // Create a clone of the thumbnail
+  const clone = target.cloneNode(true);
+  Object.assign(clone.style, {
+    position: "fixed",
+    top: `${rect.top}px`,
+    left: `${rect.left}px`,
+    width: `${rect.width}px`,
+    height: `${rect.height}px`,
+    zIndex: "9999",
+    borderRadius: "8px",
+    margin: "0",
+    pointerEvents: "none",
+    transform: "none",
+    willChange: "transform",
+    transformOrigin: "center center",
+  });
+
+  document.body.appendChild(clone);
+
+  // Hide the original image
+  const index = images.value.findIndex((img) => img.id === image.id);
+  hiddenIndex.value = index;
+
+  const original = imageRefs.value[index]?.querySelector("img");
+  if (original) original.style.visibility = "hidden";
+
+  // Compute aspect-ratio-constrained target size
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const aspectRatio = rect.width / rect.height;
+
+  let targetWidth = vw * 0.8;
+  let targetHeight = targetWidth / aspectRatio;
+
+  if (targetHeight > vh * 0.8) {
+    targetHeight = vh * 0.8;
+    targetWidth = targetHeight * aspectRatio;
+  }
+
+  // Compute center destination
+  const centerX = window.innerWidth / 2;
+  const centerY = window.innerHeight / 2;
+
+  const translateX = centerX - (rect.left + rect.width / 2);
+  const translateY = centerY - (rect.top + rect.height / 2);
+
+  // Compute scale from thumbnail to target size
+  const scaleX = targetWidth / rect.width;
+  const scaleY = targetHeight / rect.height;
+
+  // Animate using only transform (GPU smooth)
+  animate(
+    clone,
+    {
+      transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
+    },
+    {
+      duration: 0.5,
+      easing: "ease-in-out",
+      composite: "accumulate",
+    },
+  ).finished.then(() => {
+    document.body.removeChild(clone);
+    selectedImage.value = image;
+    enlargedImageLoaded.value = false;
+    cacheImage(image.id, image.file_url);
+  });
 };
 
 const closeImage = () => {
+  const modalImg = document.querySelector(".enlarged-image.loaded");
+  if (!modalImg || !selectedImage.value) {
+    selectedImage.value = null;
+    enlargedImageLoaded.value = false;
+    return;
+  }
+
+  const gridImg =
+    hiddenIndex.value !== null
+      ? imageRefs.value[hiddenIndex.value]?.querySelector("img")
+      : null;
+
+  if (!gridImg) {
+    document.body.removeChild(clone);
+    hiddenIndex.value = null;
+    return;
+  }
+
+  const gridRect = gridImg.getBoundingClientRect();
+  const modalRect = modalImg.getBoundingClientRect();
+  const scrollY = window.scrollY;
+  const scrollX = window.scrollX;
+
+  const clone = modalImg.cloneNode(true);
+  Object.assign(clone.style, {
+    position: "fixed",
+    top: `${modalRect.top}px`,
+    left: `${modalRect.left}px`,
+    width: `${modalRect.width}px`,
+    height: `${modalRect.height}px`,
+    zIndex: "9999",
+    borderRadius: "8px",
+    pointerEvents: "none",
+    margin: "0",
+    transform: "translate(0, 0)",
+    transformOrigin: "center center",
+    willChange: "transform",
+  });
+
+  document.body.appendChild(clone);
   selectedImage.value = null;
   enlargedImageLoaded.value = false;
-  window.removeEventListener("keydown", handleKeydown);
+
+  if (gridRect) {
+    const centerX = modalRect.left + scrollX + modalRect.width / 2;
+    const centerY = modalRect.top + scrollY + modalRect.height / 2;
+
+    const targetX = gridRect.left + scrollX + gridRect.width / 2;
+    const targetY = gridRect.top + scrollY + gridRect.height / 2;
+
+    const translateX = targetX - centerX;
+    const translateY = targetY - centerY;
+
+    const scaleX = gridRect.width / modalRect.width;
+    const scaleY = gridRect.height / modalRect.height;
+
+    animate(
+      clone,
+      {
+        transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
+      },
+      {
+        duration: 0.5,
+        easing: "ease-in-out",
+        composite: "accumulate",
+      },
+    ).finished.then(() => {
+      document.body.removeChild(clone);
+      if (gridImg) gridImg.style.visibility = "visible";
+      hiddenIndex.value = null;
+    });
+  } else {
+    document.body.removeChild(clone);
+    hiddenIndex.value = null;
+  }
 };
 
 const onEnlargedImageLoad = () => {
@@ -214,40 +306,16 @@ const onEnlargedImageLoad = () => {
 };
 
 const cacheImage = (id, url) => {
-  localStorage.setItem(`cachedImage_${id}`, url);
+  if (process.client) {
+    localStorage.setItem(`cachedImage_${id}`, url);
+  }
 };
 
 const getCachedImageUrl = (id) => {
-  return localStorage.getItem(`cachedImage_${id}`);
-};
-
-const showPrevImage = () => {
-  if (!selectedImage.value) return;
-
-  transitionDirection.value = "slide-right"; // Moving left, so slide image right
-
-  const currentIndex = images.value.findIndex(
-    (img) => img.id === selectedImage.value.id,
-  );
-  const prevIndex =
-    (currentIndex - 1 + images.value.length) % images.value.length;
-  selectedImage.value = images.value[prevIndex];
-  enlargedImageLoaded.value = false;
-  cacheImage(selectedImage.value.id, selectedImage.value.file_url);
-};
-
-const showNextImage = () => {
-  if (!selectedImage.value) return;
-
-  transitionDirection.value = "slide-left"; // Moving right, so slide image left
-
-  const currentIndex = images.value.findIndex(
-    (img) => img.id === selectedImage.value.id,
-  );
-  const nextIndex = (currentIndex + 1) % images.value.length;
-  selectedImage.value = images.value[nextIndex];
-  enlargedImageLoaded.value = false;
-  cacheImage(selectedImage.value.id, selectedImage.value.file_url);
+  if (process.client) {
+    return localStorage.getItem(`cachedImage_${id}`);
+  }
+  return null;
 };
 
 const handleScroll = () => {
@@ -283,7 +351,7 @@ onMounted(() => {
             imageInView.value[index] = entry.isIntersecting;
           });
         },
-        { threshold: 0.05, rootMargin: "750px 0px 750px 0px" },
+        { threshold: 0.05, rootMargin: "300px 0px 300px 0px" },
       );
 
       imageRefs.value.forEach((ref) => {
@@ -303,9 +371,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  if (observer) {
-    observer.disconnect();
-  }
+  if (observer) observer.disconnect();
   window.removeEventListener("scroll", handleScroll);
 });
 </script>
@@ -321,83 +387,10 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-.container {
-  padding: 5% 2.5%;
-}
-
-.image-grid {
-  column-count: 4;
-  column-gap: 12px;
-  padding: 1rem 0;
-}
-
-@media (max-width: 1200px) {
-  .image-grid {
-    column-count: 3;
-  }
-}
-
-@media (max-width: 768px) {
-  .image-grid {
-    column-count: 2;
-  }
-}
-
-@media (max-width: 500px) {
-  .image-grid {
-    column-count: 1;
-  }
-}
-
-.slide-left-enter-active,
-.slide-left-leave-active,
-.slide-right-enter-active,
-.slide-right-leave-active {
-  transition: all 0.3s ease;
-  position: absolute;
-}
-
-.slide-left-enter-from {
-  transform: translateX(100%);
-  opacity: 0;
-}
-.slide-left-leave-to {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.slide-right-enter-from {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-.slide-right-leave-to {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
 .image-item {
-  break-inside: avoid;
-  margin-bottom: 12px;
-  cursor: pointer;
+  position: relative;
   overflow: hidden;
   border-radius: 4px;
-  transition: transform 0.3s ease-in-out;
-  display: inline-block;
-  width: 100%;
-}
-
-.image-item:hover img {
-  transform: scale(1.05);
-}
-
-.image-item img,
-.v-lazy-image {
-  display: block;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  border-radius: 4px;
-  transition: transform 0.3s ease-in-out;
 }
 
 .v-lazy-image {
@@ -416,17 +409,66 @@ onUnmounted(() => {
 .delay-0 {
   transition-delay: 0ms;
 }
+
 .delay-1 {
   transition-delay: 100ms;
 }
+
 .delay-2 {
   transition-delay: 200ms;
 }
+
+@media (max-width: 768px) {
+  .enlarged-image {
+    max-width: 90vw;
+    max-height: 70vh;
+  }
+}
+
 .delay-3 {
   transition-delay: 300ms;
 }
+
 .delay-4 {
   transition-delay: 400ms;
+}
+
+.container {
+  padding: 2.5%;
+}
+
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.image-item {
+  flex: 1 0 auto;
+  max-width: unset;
+  margin-bottom: 5px;
+  height: 200px;
+  cursor: pointer;
+  transition: transform 0.3s ease-in-out;
+}
+
+.image-item:hover img {
+  transform: scale(1.1);
+}
+
+@media (max-width: 780px) {
+  .image-item {
+    height: 100px;
+  }
+}
+
+.image-item img {
+  object-fit: cover;
+  height: 100%;
+  width: fit-content;
+  max-width: unset;
+  transition: transform 0.3s ease-in-out;
+  border-radius: 4px;
 }
 
 .image-overlay {
@@ -435,25 +477,20 @@ onUnmounted(() => {
   left: 0;
   width: 100%;
   height: 100%;
-  padding-top: 80px;
-  padding-bottom: 40px;
   background-color: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
-  box-sizing: border-box;
+  z-index: 999;
 }
 
 .enlarged-image {
-  max-width: 92.5%;
-  max-height: 92.5%;
-  opacity: 0;
-  transform: scale(0.9);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+  max-width: 80vw;
+  max-height: 80vh;
+  object-fit: contain;
+  width: auto;
   border-radius: 8px;
+  height: auto;
 }
 
 .enlarged-image.loaded {
@@ -477,44 +514,5 @@ onUnmounted(() => {
   100% {
     transform: rotate(360deg);
   }
-}
-
-.close-button {
-  position: absolute;
-  top: 30px;
-  right: 30px;
-  background: none;
-  border: none;
-  font-size: 2.5rem;
-  color: white;
-  margin-top: 10px;
-  cursor: pointer;
-  z-index: 9999;
-}
-
-.nav-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  color: white;
-  font-size: 2rem;
-  padding: 0.5rem;
-  cursor: pointer;
-  z-index: 1000;
-  user-select: none;
-}
-
-.nav-arrow.left {
-  left: 20px;
-}
-
-.nav-arrow.right {
-  right: 20px;
-}
-
-.nav-arrow:hover {
-  background: rgba(0, 0, 0, 0.8);
 }
 </style>
