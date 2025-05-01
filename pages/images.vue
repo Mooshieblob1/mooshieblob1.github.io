@@ -343,6 +343,12 @@ const handleScroll = () => {
 
 let observer;
 
+const handleKeyDown = (event) => {
+  if (event.key === "Escape" && selectedImage.value) {
+    closeImage();
+  }
+};
+
 onMounted(() => {
   fetchImages().then(() => {
     nextTick(() => {
@@ -370,11 +376,13 @@ onMounted(() => {
   });
 
   window.addEventListener("scroll", handleScroll, { passive: true });
+  window.addEventListener("keydown", handleKeyDown);
 });
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
   window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
 
