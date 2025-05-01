@@ -164,8 +164,8 @@ const openImage = (image, event) => {
     left: `${rect.left}px`,
     width: `${rect.width}px`,
     height: `${rect.height}px`,
-    zIndex: "9999",
-    borderRadius: "8px",
+    zIndex: "2147483647",
+    borderRadius: "4px",
     margin: "0",
     pointerEvents: "none",
     transform: "none",
@@ -256,8 +256,8 @@ const closeImage = () => {
     left: `${modalRect.left}px`,
     width: `${modalRect.width}px`,
     height: `${modalRect.height}px`,
-    zIndex: "9999",
-    borderRadius: "8px",
+    zIndex: "2147483647",
+    borderRadius: "4px",
     pointerEvents: "none",
     margin: "0",
     transform: "translate(0, 0)",
@@ -491,7 +491,7 @@ onUnmounted(() => {
   max-height: 80vh;
   object-fit: contain;
   width: auto;
-  border-radius: 8px;
+  border-radius: 4px;
   height: auto;
 }
 
