@@ -1,12 +1,14 @@
 <template>
   <div>
-    <NuxtLink to="/">
-      <img
-        src="~/assets/images/bloblogo.webp"
-        alt="logo"
-        class="logo mx-auto mt-16 h-[10vw] w-auto cursor-pointer"
-      />
-    </NuxtLink>
+    <div class="mt-16 flex justify-center">
+      <NuxtLink to="/" class="inline-block">
+        <img
+          src="~/assets/images/bloblogo.webp"
+          alt="logo"
+          class="h-[10vw] w-auto cursor-pointer"
+        />
+      </NuxtLink>
+    </div>
 
     <div class="container mx-auto">
       <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
