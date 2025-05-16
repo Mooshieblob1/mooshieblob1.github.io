@@ -87,12 +87,12 @@ const sendMessage = async () => {
   input.value = ''
 
   if (/bye|see ya|goodbye/i.test(message)) {
-    messages.value.push(`blobbot: ya, see ya fren! take care 💛`)
+    messages.value.push(`ya, see ya fren! take care 💛`)
     return
   }
 
   if (userMessageCount.value === 3) {
-    messages.value.push(`blobbot: btw, u can leave feedback any time ya! i pass it on 🐾`)
+    messages.value.push(`btw, u can leave feedback any time ya! i pass it on 🐾`)
   }
 
   // Classify if it's feedback
@@ -120,9 +120,9 @@ const sendMessage = async () => {
           'Content-Type': 'application/json'
         }
       })
-      messages.value.push(`blobbot: ya, got it! i sent ur feedback 💌`)
+      messages.value.push(`ya, got it! i sent ur feedback 💌`)
     } catch {
-      messages.value.push(`blobbot: o nooo, i couldn't send da feedback 😢 try again later ya`)
+      messages.value.push(`o nooo, i couldn't send da feedback 😢 try again later ya`)
     }
     return
   }
@@ -134,9 +134,9 @@ const sendMessage = async () => {
   })
 
   if (data.value && 'response' in data.value) {
-    messages.value.push(`blobbot: ${data.value.response}`)
+    messages.value.push(`geminiblob: ${data.value.response}`)
   } else {
-    messages.value.push(`blobbot: oopsie, sumfing broke 😿 try again in a sec ya`)
+    messages.value.push(`geminiblob: oopsie, sumfing broke 😿 try again in a sec ya`)
   }
 }
 </script>
