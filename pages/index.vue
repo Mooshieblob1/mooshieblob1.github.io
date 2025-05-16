@@ -9,7 +9,9 @@
         class="h-4 w-auto md:h-6 lg:h-9"
       />
     </div>
-  </div>
+    </div>
+    <GeminiChat />
+
 </template>
 
 <script setup>
