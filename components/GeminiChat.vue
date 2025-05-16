@@ -26,30 +26,37 @@
         <span class="w-full text-center text-[#02061a] font-bold text-lg">Gemini</span>
       </div>
 
+      <!-- Chat messages -->
       <div class="flex-1 p-3 text-sm space-y-2 overflow-y-auto max-h-64 bg-[#02061a]">
-        <div v-for="(msg, i) in messages" :key="i">
-          <span
-            :class="msg.startsWith('👤')
-              ? 'text-[#fbc21b]'
-              : 'text-white'"
-          >
-            {{ msg }}
-          </span>
+        <div
+          v-for="(msg, i) in messages"
+          :key="i"
+          class="flex items-start gap-2"
+        >
+          <template v-if="msg.startsWith('👤')">
+            <span class="text-[#fbc21b]">👤</span>
+            <span class="text-[#fbc21b]">{{ msg.slice(3) }}</span>
+          </template>
+          <template v-else>
+            <img src="/blobbot.webp" alt="BlobBot" class="w-6 h-6 rounded-full" />
+            <span class="text-white">{{ msg.slice(3) }}</span>
+          </template>
         </div>
       </div>
 
+      <!-- Input -->
       <div class="flex gap-2 border-t border-[#fbc21b] p-3 bg-[#02061a]">
         <input
           v-model="input"
           @keyup.enter="sendMessage"
-          placeholder="Type a message..."
+          placeholder="type a message..."
           class="flex-1 border border-[#fbc21b] bg-[#02061a] px-3 py-2 rounded text-[#fbc21b] placeholder-[#fbc21b] text-sm focus:outline-none"
         />
         <button
           @click="sendMessage"
           class="bg-[#fbc21b] hover:bg-[#ffd966] text-[#02061a] px-3 py-2 rounded text-sm font-semibold transition"
         >
-          Send
+          send
         </button>
       </div>
     </div>
@@ -67,7 +74,7 @@ const userMessageCount = ref(0)
 const toggle = () => {
   isOpen.value = !isOpen.value
   if (isOpen.value && messages.value.length === 0) {
-    messages.value.push('🤖: Am Gemini! Pls leave feedback!')
+    messages.value.push('ya, am geminiblob! pls leave feedback! 💛')
   }
 }
 
@@ -79,22 +86,17 @@ const sendMessage = async () => {
   userMessageCount.value++
   input.value = ''
 
-  // Goodbye detection
   if (/bye|see ya|goodbye/i.test(message)) {
-    messages.value.push('🤖: Thanks for visiting! Talk to you again soon 💛')
+    messages.value.push(`blobbot: ya, see ya fren! take care 💛`)
     return
   }
 
-  // Ask for feedback after 3 messages
   if (userMessageCount.value === 3) {
-    messages.value.push('🤖: By the way, I’d love to hear your feedback on the site so far!')
+    messages.value.push(`blobbot: btw, u can leave feedback any time ya! i pass it on 🐾`)
   }
 
-  // Step 1: Ask Gemini if this message is feedback
-  const classifyPrompt = `Determine if the following message is intended as user feedback or a casual chat. Reply with only "yes" or "no".
-
-Message:
-"${message}"`
+  // Classify if it's feedback
+  const classifyPrompt = `is this user message feedback? say only "yes" or "no"\n\n"${message}"`
   const classifyRes = await $fetch('/api/gemini', {
     method: 'POST',
     body: { prompt: classifyPrompt }
@@ -118,23 +120,23 @@ Message:
           'Content-Type': 'application/json'
         }
       })
-      messages.value.push('🤖: Thank you! I’ve sent your feedback to the team 💌')
+      messages.value.push(`blobbot: ya, got it! i sent ur feedback 💌`)
     } catch {
-      messages.value.push('🤖: I couldn’t send your feedback. Please try again later.')
+      messages.value.push(`blobbot: o nooo, i couldn't send da feedback 😢 try again later ya`)
     }
     return
   }
 
-  // Step 2: Otherwise, ask Gemini to respond normally
+  // Else, send to Gemini for normal response
   const { data, error } = await useFetch('/api/gemini', {
     method: 'POST',
     body: { prompt: message }
   })
 
   if (data.value && 'response' in data.value) {
-    messages.value.push(`🤖: ${data.value.response}`)
+    messages.value.push(`blobbot: ${data.value.response}`)
   } else {
-    messages.value.push('🤖: Hmm, something went wrong. Try again?')
+    messages.value.push(`blobbot: oopsie, sumfing broke 😿 try again in a sec ya`)
   }
 }
 </script>

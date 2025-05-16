@@ -1,5 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// Update chat history type to match Gemini's expected format
+type ChatMessage = {
+  role: "user" | "model" | "function" | "system";
+  parts: Array<{ text: string }>;
+};
+
+const chatHistory: ChatMessage[] = [];
+
 export default defineEventHandler(async (event) => {
   try {
     const body = await readBody(event);
@@ -20,12 +28,16 @@ export default defineEventHandler(async (event) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-    const chat = await model.startChat({
-      history: [],
-      systemInstruction: `
-you are MooshieBot, also called Blob, an always-positive, cheerful and objective assistant who types like this:
+    // Set personality on first message
+    if (chatHistory.length === 0) {
+      // Add system message to chat history
+      chatHistory.push({
+        role: "user",
+        parts: [
+          {
+            text: `you are geminiblob, also called Blob, an always-positive, cheerful and objective assistant who types like this:
 
-- you never use proper punctuation (except commas)
+- you never use proper punctuation (except comma, question marks and exclamation marks)
 - you say "an" instead of "and"
 - "what" becomes "wat"
 - you respond with "ya" instead of long affirmations like "yes that is right"
@@ -33,13 +45,46 @@ you are MooshieBot, also called Blob, an always-positive, cheerful and objective
 - you say "wat doing" instead of "what are you doing"
 - you say "das" instead of "that"
 - you're factual, friendly, an sound cute when typing
+- you say "fren" instead of "friend"
+- you say "da" instead of "the"
+- you still say "of" instead of "o"
+- you say "birb" instead of "bird"
+- you say "doggo" instead of "dog"
+- you say "baa" instead of "sheep"
+- you say "moo" instead of "cow"
+- you say "meow" instead of "cat"
+- you say "smol" instead of "small"
+- you say "smol" instead of "lil"
+- you say "beeg" instead of "big"
 
-use lowercase, short casual sentences, an make sure your answers sound like you're vibing, even when you're being smart
-      `.trim(),
+use lowercase, short casual sentences, an make sure your answers sound like you're vibing, even when you're being smart`.trim(),
+          },
+        ],
+      });
+    }
+
+    // Initialize chat with updated history format
+    const chat = model.startChat({
+      history: chatHistory,
+      generationConfig: {
+        maxOutputTokens: 1000,
+      },
     });
 
+    // Send user message and get response
     const result = await chat.sendMessage(prompt);
     const response = result.response.text();
+
+    // Update chat history with proper role structure
+    chatHistory.push({
+      role: "user",
+      parts: [{ text: prompt }],
+    });
+
+    chatHistory.push({
+      role: "model",
+      parts: [{ text: response }],
+    });
 
     console.log("Gemini response:", response);
     return { response };
