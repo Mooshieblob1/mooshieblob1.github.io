@@ -9,9 +9,9 @@
         class="mr-2"
       >
         <Icon
-          icon="mdi:twitter"
+          name="mdi:twitter"
           class="social-icon"
-          :style="{ color: '#ffcc00', fontSize: '35px' }"
+          style="color: #ffcc00; font-size: 35px"
         />
       </a>
       <a
@@ -21,9 +21,9 @@
         class="mr-2"
       >
         <Icon
-          icon="mdi:github"
+          name="mdi:github"
           class="social-icon"
-          :style="{ color: '#ffcc00', fontSize: '35px' }"
+          style="color: #ffcc00; font-size: 35px"
         />
       </a>
     </div>
@@ -32,5 +32,5 @@
 
 <script setup lang="ts">
 import BlobLogo from "./logo/bloblogo.vue";
-import { Icon } from "@iconify/vue";
+// No need to import Icon - it's auto-imported by @nuxt/icon
 </script>
