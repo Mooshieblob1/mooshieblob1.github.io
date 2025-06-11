@@ -28,7 +28,7 @@
         <input
           type="hidden"
           name="_next"
-          value="https://mooshieblob.com/thank-you"
+          value="https://mooshieblob.com/submit"
         />
 
         <div class="mb-4">
