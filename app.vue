@@ -5,6 +5,8 @@
         <NuxtPage />
       </transition>
     </transition>
+    <!-- Add the link here -->
+    <a rel="me" href="https://fartgram.gpu.garden/@Blob" class="invisible-link">Vernissage</a>
   </NuxtLayout>
 </template>
 
@@ -51,4 +53,10 @@ input,
 textarea {
   user-select: text;
 }
+
+/* Make the specific link invisible */
+.invisible-link {
+  display: none;
+}
 </style>
+
