@@ -11,7 +11,7 @@
         />
       </NuxtLink>
       <h1 class="mb-4 text-center text-2xl font-bold text-yellow-400">
-        Submit Your Ideas
+        Submit Your Image requests.
       </h1>
       <form
         action="https://formsubmit.co/blob@mooshieblob.com"
