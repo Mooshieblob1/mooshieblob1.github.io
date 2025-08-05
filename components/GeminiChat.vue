@@ -136,7 +136,7 @@ const sendMessage = async () => {
   if (data.value && 'response' in data.value) {
     messages.value.push(`geminiblob: ${data.value.response}`)
   } else {
-    messages.value.push(`geminiblob: oopsie, sumfing broke 😿 try again in a sec ya`)
+    messages.value.push(`geminiblob: oopsie, something broke 😿 try again in a sec ya`)
   }
 }
 </script>
