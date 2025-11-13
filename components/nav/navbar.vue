@@ -5,7 +5,7 @@
 -->
 
 <template>
-  <nav class="fixed right-0 top-0 w-full bg-transparent p-4">
+  <nav aria-label="Main navigation" class="fixed right-0 top-0 w-full bg-transparent p-4">
     <div class="container mx-auto flex items-center justify-end space-x-4">
       <div class="group relative">
         <nuxt-link

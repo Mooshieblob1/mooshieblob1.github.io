@@ -19,7 +19,7 @@
         class="w-full"
       >
         <!-- FormSubmit honeypot to prevent spam -->
-        <input type="text" name="_honey" style="display: none" />
+        <input type="text" name="_honey" style="display: none" aria-hidden="true" tabindex="-1" />
 
         <!-- Disable captcha -->
         <input type="hidden" name="_captcha" value="false" />
@@ -66,12 +66,7 @@ definePageMeta({
   },
 });
 
-// Blur fix: manually remove focus on page load
-onMounted(() => {
-  if (document.activeElement instanceof HTMLElement) {
-    document.activeElement.blur();
-  }
-});
+// Page is mounted - no need to blur for accessibility
 </script>
 
 <style scoped>

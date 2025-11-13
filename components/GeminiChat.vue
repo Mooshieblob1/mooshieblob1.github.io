@@ -3,11 +3,15 @@
     <!-- Toggle Button with Gemini Logo -->
     <button
       @click="toggle"
+      aria-label="Open chat with Gemini assistant"
+      :aria-expanded="isOpen"
+      aria-controls="chat-popup"
       class="w-12 h-12 bg-white p-1 rounded-full overflow-hidden shadow-lg border border-[#fbc21b] hover:scale-105 transition-all"
     >
       <img
         src="/gemini-logo.png"
-        alt="Chat"
+        alt=""
+        aria-hidden="true"
         class="w-full h-full object-contain"
       />
     </button>
@@ -15,6 +19,11 @@
     <!-- Chat Popup -->
     <div
       v-if="isOpen"
+      id="chat-popup"
+      role="dialog"
+      aria-label="Chat with Gemini assistant"
+      aria-modal="false"
+      @keydown="handleKeyDown"
       class="absolute bottom-20 left-0 w-80 bg-[#02061a] border border-[#fbc21b] rounded-lg shadow-lg overflow-hidden flex flex-col"
     >
       <div class="flex items-center bg-[#fbc21b] px-4 py-2 border-b border-[#fbc21b] relative">
@@ -27,7 +36,13 @@
       </div>
 
       <!-- Chat messages -->
-      <div class="flex-1 p-3 text-sm space-y-2 overflow-y-auto max-h-64 bg-[#02061a]">
+      <div 
+        class="flex-1 p-3 text-sm space-y-2 overflow-y-auto max-h-64 bg-[#02061a]"
+        role="log"
+        aria-live="polite"
+        aria-atomic="false"
+        aria-relevant="additions"
+      >
         <div
           v-for="(msg, i) in messages"
           :key="i"
@@ -46,15 +61,21 @@
 
       <!-- Input -->
       <div class="flex gap-2 border-t border-[#fbc21b] p-3 bg-[#02061a]">
+        <label for="chat-input" class="sr-only">Type your message</label>
         <input
+          id="chat-input"
+          ref="chatInput"
           v-model="input"
           @keyup.enter="sendMessage"
           placeholder="type a message..."
+          aria-label="Chat message input"
           class="flex-1 border border-[#fbc21b] bg-[#02061a] px-3 py-2 rounded text-[#fbc21b] placeholder-[#fbc21b] text-sm focus:outline-none"
         />
         <button
           @click="sendMessage"
-          class="bg-[#fbc21b] hover:bg-[#ffd966] text-[#02061a] px-3 py-2 rounded text-sm font-semibold transition"
+          aria-label="Send message"
+          :disabled="!input.trim()"
+          class="bg-[#fbc21b] hover:bg-[#ffd966] text-[#02061a] px-3 py-2 rounded text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           send
         </button>
@@ -64,17 +85,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 
 const isOpen = ref(false)
 const input = ref('')
 const messages = ref<string[]>([])
 const userMessageCount = ref(0)
+const chatInput = ref<HTMLInputElement | null>(null)
 
-const toggle = () => {
+const toggle = async () => {
   isOpen.value = !isOpen.value
-  if (isOpen.value && messages.value.length === 0) {
-    messages.value.push('ya, am geminiblob! pls leave feedback! 💛')
+  if (isOpen.value) {
+    if (messages.value.length === 0) {
+      messages.value.push('ya, am geminiblob! pls leave feedback! 💛')
+    }
+    // Focus input when opening
+    await nextTick()
+    chatInput.value?.focus()
+  }
+}
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Close on Escape key
+  if (event.key === 'Escape') {
+    isOpen.value = false
   }
 }
 

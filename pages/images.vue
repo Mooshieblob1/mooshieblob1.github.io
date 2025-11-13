@@ -14,8 +14,9 @@
       <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
 
       <!-- Loading Spinner for initial load -->
-      <div v-if="isLoading" class="flex h-64 items-center justify-center">
-        <div class="spinner"></div>
+      <div v-if="isLoading" class="flex h-64 items-center justify-center" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <span class="sr-only">Loading images...</span>
       </div>
 
       <div v-else class="image-grid">
@@ -27,7 +28,12 @@
           :enter="{ opacity: 1, y: 0 }"
           :transition="{ delay: index * 0.05 }"
           class="image-item"
+          role="button"
+          tabindex="0"
+          :aria-label="`View image: ${image.tag_string || 'gallery image'}`"
           @click="(e) => openImage(image, e)"
+          @keydown.enter="(e) => openImage(image, e)"
+          @keydown.space.prevent="(e) => openImage(image, e)"
         >
           <div
             :ref="(el) => (imageRefs[index] = el)"
@@ -39,7 +45,7 @@
               :src-placeholder="
                 getCachedImageUrl(image.id) || '/images/placeholder.svg'
               "
-              :alt="image.tag_string"
+              :alt="image.tag_string || 'Image from gallery'"
               :class="[
                 'transform transition-all duration-1000 ease-out',
                 { loaded: loadedImages[index] },
@@ -67,12 +73,19 @@
         :enter="{ opacity: 1 }"
         :leave="{ opacity: 0 }"
         class="image-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Enlarged image view"
         @click.self="closeImage"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd"
+        @keydown="handleModalKeyDown"
       >
         <!-- Loading Spinner for enlarged image -->
-        <div v-if="!enlargedImageLoaded" class="spinner"></div>
+        <div v-if="!enlargedImageLoaded" role="status" aria-live="polite">
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="sr-only">Loading full size image...</span>
+        </div>
 
         <Motion
           :layout="true"
@@ -83,8 +96,10 @@
         >
           <img
             v-show="enlargedImageLoaded"
+            ref="enlargedImageRef"
+            tabindex="0"
             :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
-            :alt="selectedImage.tag_string"
+            :alt="selectedImage.tag_string || 'Enlarged image from gallery'"
             :class="[
               'enlarged-image',
               'h-auto max-h-[40vh] w-auto max-w-[40vw] object-contain',
@@ -94,7 +109,14 @@
           />
         </Motion>
 
-        <!-- Navigation Arrows -->
+        <!-- Close button for accessibility -->
+        <button
+          @click="closeImage"
+          aria-label="Close enlarged image"
+          class="absolute top-4 right-4 bg-[#fbc21b] text-[#02061a] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#ffd966] transition-colors focus:outline-none focus:ring-2 focus:ring-[#fbc21b]"
+        >
+          <span aria-hidden="true" class="text-2xl font-bold">&times;</span>
+        </button>
       </Motion>
     </div>
   </div>
@@ -126,7 +148,9 @@ const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 const hiddenIndex = ref(null);
+const enlargedImageRef = ref(null);
 let lastScrollTop = 0;
+let lastFocusedElement = null;
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -150,6 +174,9 @@ const onImageLoad = (index, image) => {
 };
 
 const openImage = (image, event) => {
+  // Store the currently focused element
+  lastFocusedElement = document.activeElement;
+  
   const target = event.currentTarget.querySelector("img");
   if (!target) return;
   const rect = target.getBoundingClientRect();
@@ -222,6 +249,11 @@ const openImage = (image, event) => {
     selectedImage.value = image;
     enlargedImageLoaded.value = false;
     cacheImage(image.id, image.file_url);
+    
+    // Focus the enlarged image for accessibility
+    nextTick(() => {
+      enlargedImageRef.value?.focus();
+    });
   });
 };
 
@@ -230,6 +262,11 @@ const closeImage = () => {
   if (!modalImg || !selectedImage.value) {
     selectedImage.value = null;
     enlargedImageLoaded.value = false;
+    // Restore focus
+    if (lastFocusedElement) {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
+    }
     return;
   }
 
@@ -296,10 +333,22 @@ const closeImage = () => {
       document.body.removeChild(clone);
       if (gridImg) gridImg.style.visibility = "visible";
       hiddenIndex.value = null;
+      
+      // Restore focus to the previously focused element
+      if (lastFocusedElement) {
+        lastFocusedElement.focus();
+        lastFocusedElement = null;
+      }
     });
   } else {
     document.body.removeChild(clone);
     hiddenIndex.value = null;
+    
+    // Restore focus
+    if (lastFocusedElement) {
+      lastFocusedElement.focus();
+      lastFocusedElement = null;
+    }
   }
 };
 
@@ -346,6 +395,32 @@ let observer;
 const handleKeyDown = (event) => {
   if (event.key === "Escape" && selectedImage.value) {
     closeImage();
+  }
+};
+
+const handleModalKeyDown = (event) => {
+  // Close modal on Escape
+  if (event.key === "Escape") {
+    closeImage();
+  }
+  
+  // Navigate between images with arrow keys
+  if (!selectedImage.value) return;
+  
+  const currentIndex = images.value.findIndex((img) => img.id === selectedImage.value?.id);
+  
+  if (event.key === "ArrowLeft" && currentIndex > 0) {
+    event.preventDefault();
+    const prevImage = images.value[currentIndex - 1];
+    selectedImage.value = prevImage;
+    enlargedImageLoaded.value = false;
+    cacheImage(prevImage.id, prevImage.file_url);
+  } else if (event.key === "ArrowRight" && currentIndex < images.value.length - 1) {
+    event.preventDefault();
+    const nextImage = images.value[currentIndex + 1];
+    selectedImage.value = nextImage;
+    enlargedImageLoaded.value = false;
+    cacheImage(nextImage.id, nextImage.file_url);
   }
 };
 

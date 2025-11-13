@@ -41,14 +41,47 @@
   pointer-events: none;
 }
 
-/* Global cursor fix */
-body {
+/* Global cursor fix - only disable on interactive elements */
+button,
+.no-select {
   user-select: none;
 }
 
-/* Allow selecting inside inputs or textareas */
+/* Ensure text in inputs and textareas is selectable */
 input,
-textarea {
+textarea,
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   user-select: text;
+}
+
+/* Global focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid #fbc21b;
+  outline-offset: 2px;
+}
+
+/* Remove default focus for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Screen reader only utility class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 </style>
