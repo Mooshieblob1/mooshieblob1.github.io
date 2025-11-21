@@ -28,6 +28,7 @@
           :enter="{ opacity: 1, y: 0 }"
           :transition="{ delay: index * 0.05 }"
           class="image-item"
+          :style="{ aspectRatio: image.image_width && image.image_height ? `${image.image_width}/${image.image_height}` : '1/1' }"
           role="button"
           tabindex="0"
           :aria-label="`View image: ${image.tag_string || 'gallery image'}`"
@@ -38,28 +39,30 @@
           <div
             :ref="(el) => (imageRefs[index] = el)"
             :data-index="index"
-            class="h-full"
+            class="h-full relative overflow-hidden rounded-[4px]"
+            :class="[
+              'transform transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]',
+              imageInView[index]
+                ? 'translate-y-0 opacity-100 scale-100'
+                : (scrollDirection === 'down' ? 'translate-y-24' : '-translate-y-24') + ' opacity-0 scale-90',
+            ]"
+            :style="{ transitionDelay: `${(index % 5) * 100}ms` }"
           >
-            <v-lazy-image
+            <!-- Placeholder / Cached Image (Background Layer) -->
+            <img
+              :src="getCachedImageUrl(image.id) || '/images/placeholder.svg'"
+              alt=""
+              class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+              :class="{ 'opacity-0': loadedImages[index] }"
+            />
+            
+            <!-- Real Image (Foreground Layer) -->
+            <img
+              v-if="shouldLoadImage[index]"
               :src="image.media_asset.variants[2].url"
-              :src-placeholder="
-                getCachedImageUrl(image.id) || '/images/placeholder.svg'
-              "
               :alt="image.tag_string || 'Image from gallery'"
-              :class="[
-                'transform transition-all duration-1000 ease-out',
-                { loaded: loadedImages[index] },
-                { 'translate-y-0 opacity-100': imageInView[index] },
-                {
-                  'translate-y-1/4 opacity-0':
-                    !imageInView[index] && scrollDirection === 'down',
-                },
-                {
-                  '-translate-y-1/4 opacity-0':
-                    !imageInView[index] && scrollDirection === 'up',
-                },
-                `delay-${index % 5}`,
-              ]"
+              class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+              :class="{ 'opacity-100': loadedImages[index], 'opacity-0': !loadedImages[index] }"
               @load="onImageLoad(index, image)"
             />
           </div>
@@ -143,6 +146,7 @@ const images = ref([]);
 const selectedImage = ref(null);
 const loadedImages = ref([]);
 const imageInView = ref([]);
+const shouldLoadImage = ref([]);
 const imageRefs = ref([]);
 const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
@@ -151,6 +155,7 @@ const hiddenIndex = ref(null);
 const enlargedImageRef = ref(null);
 let lastScrollTop = 0;
 let lastFocusedElement = null;
+const { $lenis } = useNuxtApp();
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -161,6 +166,7 @@ const fetchImages = async () => {
     images.value = data;
     loadedImages.value = new Array(data.length).fill(false);
     imageInView.value = new Array(data.length).fill(false);
+    shouldLoadImage.value = new Array(data.length).fill(false);
   } catch (error) {
     console.error("Error fetching images:", error);
   } finally {
@@ -378,19 +384,19 @@ const handleScroll = () => {
   }
 
   lastScrollTop = st <= 0 ? 0 : st;
+};
 
-  imageRefs.value.forEach((ref, index) => {
-    if (ref) {
-      const rect = ref.getBoundingClientRect();
-      const inView = rect.top < window.innerHeight + 300 && rect.bottom > -300;
-      if (inView) {
-        imageInView.value[index] = true;
-      }
+const handleLenisScroll = ({ velocity }) => {
+  if (velocity !== 0) {
+    const newDirection = velocity > 0 ? "down" : "up";
+    if (newDirection !== scrollDirection.value) {
+      scrollDirection.value = newDirection;
     }
-  });
+  }
 };
 
 let observer;
+let loadingObserver;
 
 const handleKeyDown = (event) => {
   if (event.key === "Escape" && selectedImage.value) {
@@ -427,6 +433,7 @@ const handleModalKeyDown = (event) => {
 onMounted(() => {
   fetchImages().then(() => {
     nextTick(() => {
+      // Animation Observer (Viewport)
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -434,28 +441,48 @@ onMounted(() => {
             imageInView.value[index] = entry.isIntersecting;
           });
         },
-        { threshold: 0.05, rootMargin: "300px 0px 300px 0px" },
+        { threshold: 0.1, rootMargin: "0px 0px -10% 0px" },
+      );
+
+      // Loading Observer (Aggressive Preload)
+      loadingObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const index = parseInt(entry.target.dataset.index);
+              shouldLoadImage.value[index] = true;
+              loadingObserver.unobserve(entry.target); // Only need to trigger once
+            }
+          });
+        },
+        { rootMargin: "200% 0px 200% 0px" } // Load when within 2 viewports
       );
 
       imageRefs.value.forEach((ref) => {
-        if (ref) observer.observe(ref);
-      });
-
-      observer.takeRecords().forEach((entry) => {
-        const index = parseInt(entry.target.dataset.index);
-        if (entry.isIntersecting) {
-          imageInView.value[index] = true;
+        if (ref) {
+          observer.observe(ref);
+          loadingObserver.observe(ref);
         }
       });
     });
   });
 
-  window.addEventListener("scroll", handleScroll, { passive: true });
   window.addEventListener("keydown", handleKeyDown);
+
+  if ($lenis) {
+    $lenis.on("scroll", handleLenisScroll);
+  } else {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+  }
 });
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
+  if (loadingObserver) loadingObserver.disconnect();
+  
+  if ($lenis) {
+    $lenis.off("scroll", handleLenisScroll);
+  }
   window.removeEventListener("scroll", handleScroll);
   window.removeEventListener("keydown", handleKeyDown);
 });
@@ -479,15 +506,7 @@ onUnmounted(() => {
 }
 
 .v-lazy-image {
-  opacity: 0;
-  transition:
-    opacity 0.3s,
-    transform 0.5s ease-in-out;
   border-radius: 4px;
-}
-
-.v-lazy-image.loaded {
-  opacity: 1;
 }
 
 /* Add staggered delay classes */
