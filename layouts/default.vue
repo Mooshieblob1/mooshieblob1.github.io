@@ -4,6 +4,7 @@
     <div class="page-wrapper">
     <Navbar />
     <RainEffect />
+    <CursorFollower />
     <main id="main-content" class="main-content">
       <slot />
     </main>
@@ -16,6 +17,7 @@
 import WebFooter from "~/components/footer/webfooter.vue";
 import Navbar from "~/components/nav/navbar.vue";
 import RainEffect from "~/components/effects/RainEffect.vue";
+import CursorFollower from "~/components/effects/CursorFollower.vue";
 import SkipToMain from "~/components/SkipToMain.vue";
 </script>
 

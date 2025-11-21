@@ -1,11 +1,14 @@
 <template>
-  <NuxtLayout>
-    <transition name="layout" mode="out-in">
-      <transition name="page" mode="out-in">
-        <NuxtPage />
+  <div>
+    <SplashScreen />
+    <NuxtLayout>
+      <transition name="layout" mode="out-in">
+        <transition name="page" mode="out-in">
+          <NuxtPage />
+        </transition>
       </transition>
-    </transition>
-  </NuxtLayout>
+    </NuxtLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
