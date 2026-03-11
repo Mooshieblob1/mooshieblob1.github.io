@@ -1,0 +1,23 @@
+---
+import NoRainLayout from '../layouts/NoRainLayout.astro';
+import ImageGallery from '../components/ImageGallery.vue';
+---
+
+<NoRainLayout title="Images - Mooshieblob" description="Image gallery">
+  <div>
+    <div class="mt-16 flex justify-center">
+      <a href="/" class="inline-block">
+        <img
+          src="/assets/images/bloblogo.webp"
+          alt="logo"
+          class="h-[10vw] w-auto cursor-pointer"
+        />
+      </a>
+    </div>
+
+    <div class="container mx-auto">
+      <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
+      <ImageGallery client:load />
+    </div>
+  </div>
+</NoRainLayout>

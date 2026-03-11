@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SplashScreen from '../components/SplashScreen.vue';
+import SocialLinks from '../components/SocialLinks.vue';
+---
+
+<BaseLayout title="Mooshieblob" description="Am blob">
+  <SplashScreen client:load />
+  <div class="index-content">
+    <SocialLinks client:load />
+    <div class="back-row-toggle splat-toggle">
+      <img
+        id="bg_girl"
+        src="/assets/images/bg.webp"
+        alt="Background Image"
+        class="h-4 w-auto md:h-6 lg:h-9"
+      />
+    </div>
+  </div>
+</BaseLayout>
+
+<style>
+  .index-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+</style>
