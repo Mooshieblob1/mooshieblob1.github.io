@@ -1,7 +1,7 @@
 <template>
   <footer class="footer-container">
     <div class="footer-text">
-      <span>© 2024-2025 Mooshieblob</span>
+      <span>© 2024-{{ currentYear }} Mooshieblob</span>
       <a
         id="ipv6"
         href="https://iplocation.io/ipv6-compatibility-checker?url=referer"
@@ -19,12 +19,10 @@
   </footer>
 </template>
 
-<script>
+<script setup>
 import "~/assets/css/output.css";
 
-export default {
-  name: "WebFooter",
-};
+const currentYear = new Date().getFullYear();
 </script>
 
 <style scoped>

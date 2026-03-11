@@ -35,26 +35,12 @@ The site has been updated to address critical accessibility issues including key
 - **Icon hiding**: Set `aria-hidden="true"` on decorative icon elements
 - **Navigation landmark**: Wrapped icons in navigation region with `aria-label="Social media links"`
 
-### 6. Chat Widget (GeminiChat.vue)
-
-- **Button accessibility**: 
-  - Added `aria-label="Open chat with Gemini assistant"`
-  - Added `aria-expanded` state
-  - Added `aria-controls` linking to popup
-- **Dialog role**: Chat popup has `role="dialog"` and `aria-label`
-- **Live region**: Chat messages use `role="log"` with `aria-live="polite"`
-- **Form labels**: Added label for input field (visually hidden with `.sr-only`)
-- **Keyboard support**:
-  - Escape key closes chat
-  - Auto-focus on input when opening
-- **Button states**: Send button is disabled when input is empty
-
-### 7. Submit Form (submit.vue)
+### 6. Submit Form (submit.vue)
 
 - **Honeypot field**: Added `aria-hidden="true"` and `tabindex="-1"` to prevent screen reader interaction
 - **Removed blur hack**: Removed code that forcefully blurred focused elements on page load
 
-### 8. Image Gallery (images.vue)
+### 7. Image Gallery (images.vue)
 
 #### Loading States
 - **Loading spinners**: Added `role="status"` and `aria-live="polite"` with screen reader announcements

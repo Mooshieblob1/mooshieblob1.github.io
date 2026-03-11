@@ -12,7 +12,6 @@
     "wrangler-dev": "wrangler dev"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@iconify/vue": "^5.0.0",
     "@nuxt/icon": "^1.13.0",
     "@nuxt/types": "^2.18.1",

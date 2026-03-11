@@ -20,13 +20,9 @@
       </div>
 
       <div v-else class="image-grid">
-        <Motion
+        <div
           v-for="(image, index) in images"
           :key="image.id"
-          :layout="true"
-          :initial="{ opacity: 0, y: 50 }"
-          :enter="{ opacity: 1, y: 0 }"
-          :transition="{ delay: index * 0.05 }"
           class="image-item"
           :style="{ aspectRatio: image.image_width && image.image_height ? `${image.image_width}/${image.image_height}` : '1/1' }"
           role="button"
@@ -39,14 +35,13 @@
           <div
             :ref="(el) => (imageRefs[index] = el)"
             :data-index="index"
-            class="h-full relative overflow-hidden rounded-[4px]"
-            :class="[
-              'transform transition-all duration-700 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]',
-              imageInView[index]
-                ? 'translate-y-0 opacity-100 scale-100'
-                : (scrollDirection === 'down' ? 'translate-y-24' : '-translate-y-24') + ' opacity-0 scale-90',
-            ]"
-            :style="{ transitionDelay: `${(index % 5) * 100}ms` }"
+            class="image-cell h-full relative overflow-hidden rounded-[4px]"
+            :class="{
+              'is-visible': imageInView[index],
+              'from-below': !imageInView[index] && imageDirection[index] === 'below',
+              'from-above': !imageInView[index] && imageDirection[index] === 'above',
+            }"
+            :style="{ transitionDelay: `${(index % 4) * 60}ms` }"
           >
             <!-- Placeholder / Cached Image (Background Layer) -->
             <img
@@ -61,12 +56,13 @@
               v-if="shouldLoadImage[index]"
               :src="image.media_asset.variants[2].url"
               :alt="image.tag_string || 'Image from gallery'"
+              loading="lazy"
               class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
               :class="{ 'opacity-100': loadedImages[index], 'opacity-0': !loadedImages[index] }"
               @load="onImageLoad(index, image)"
             />
           </div>
-        </Motion>
+        </div>
       </div>
 
       <Motion
@@ -130,7 +126,6 @@ import { ref, onMounted, onUnmounted, nextTick } from "vue";
 import { animate } from "motion";
 import { useRainEffect } from "~/composables/useRainEffect";
 import "~/assets/css/output.css";
-import VLazyImage from "v-lazy-image";
 
 const { toggleRainEffect } = useRainEffect();
 toggleRainEffect(false);
@@ -145,17 +140,48 @@ definePageMeta({
 const images = ref([]);
 const selectedImage = ref(null);
 const loadedImages = ref([]);
+const imageReady = ref([]);
+const revealedImages = ref([]);
 const imageInView = ref([]);
+const imageDirection = ref([]);
 const shouldLoadImage = ref([]);
 const imageRefs = ref([]);
-const scrollDirection = ref("down");
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 const hiddenIndex = ref(null);
 const enlargedImageRef = ref(null);
-let lastScrollTop = 0;
 let lastFocusedElement = null;
 const { $lenis } = useNuxtApp();
+
+// Staggered image loading queue — prevents browser connection saturation
+const loadQueue = [];
+let isProcessingQueue = false;
+const LOAD_BATCH_SIZE = 3;
+const LOAD_STAGGER_MS = 150;
+
+const processLoadQueue = () => {
+  if (isProcessingQueue || loadQueue.length === 0) return;
+  isProcessingQueue = true;
+  const batch = loadQueue.splice(0, LOAD_BATCH_SIZE);
+  batch.forEach((i) => {
+    shouldLoadImage.value[i] = true;
+  });
+  if (loadQueue.length > 0) {
+    setTimeout(() => {
+      isProcessingQueue = false;
+      processLoadQueue();
+    }, LOAD_STAGGER_MS);
+  } else {
+    isProcessingQueue = false;
+  }
+};
+
+const queueImageLoad = (index) => {
+  if (!shouldLoadImage.value[index]) {
+    loadQueue.push(index);
+    processLoadQueue();
+  }
+};
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -165,7 +191,10 @@ const fetchImages = async () => {
     const data = await response.json();
     images.value = data;
     loadedImages.value = new Array(data.length).fill(false);
+    imageReady.value = new Array(data.length).fill(false);
+    revealedImages.value = new Array(data.length).fill(false);
     imageInView.value = new Array(data.length).fill(false);
+    imageDirection.value = new Array(data.length).fill('below');
     shouldLoadImage.value = new Array(data.length).fill(false);
   } catch (error) {
     console.error("Error fetching images:", error);
@@ -175,8 +204,19 @@ const fetchImages = async () => {
 };
 
 const onImageLoad = (index, image) => {
-  loadedImages.value[index] = true;
+  imageReady.value[index] = true;
   cacheImage(image.id, image.file_url);
+  flushReveals();
+};
+
+// Reveal images sequentially — only show image N once 0..N-1 are all ready
+const flushReveals = () => {
+  for (let i = 0; i < imageReady.value.length; i++) {
+    if (revealedImages.value[i]) continue;
+    if (!imageReady.value[i]) break;
+    revealedImages.value[i] = true;
+    loadedImages.value[i] = true;
+  }
 };
 
 const openImage = (image, event) => {
@@ -375,26 +415,6 @@ const getCachedImageUrl = (id) => {
   return null;
 };
 
-const handleScroll = () => {
-  const st = window.pageYOffset || document.documentElement.scrollTop;
-  const newDirection = st > lastScrollTop ? "down" : "up";
-
-  if (newDirection !== scrollDirection.value) {
-    scrollDirection.value = newDirection;
-  }
-
-  lastScrollTop = st <= 0 ? 0 : st;
-};
-
-const handleLenisScroll = ({ velocity }) => {
-  if (velocity !== 0) {
-    const newDirection = velocity > 0 ? "down" : "up";
-    if (newDirection !== scrollDirection.value) {
-      scrollDirection.value = newDirection;
-    }
-  }
-};
-
 let observer;
 let loadingObserver;
 
@@ -433,29 +453,40 @@ const handleModalKeyDown = (event) => {
 onMounted(() => {
   fetchImages().then(() => {
     nextTick(() => {
-      // Animation Observer (Viewport)
+      // Animation Observer (Viewport) — tracks per-image direction
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             const index = parseInt(entry.target.dataset.index);
-            imageInView.value[index] = entry.isIntersecting;
+            if (entry.isIntersecting) {
+              imageInView.value[index] = true;
+            } else {
+              imageInView.value[index] = false;
+              // Determine exit direction: if element is above viewport, it left upward
+              const rect = entry.boundingClientRect;
+              if (rect.bottom < 0) {
+                imageDirection.value[index] = 'above';
+              } else {
+                imageDirection.value[index] = 'below';
+              }
+            }
           });
         },
-        { threshold: 0.1, rootMargin: "0px 0px -10% 0px" },
+        { threshold: 0.05 },
       );
 
-      // Loading Observer (Aggressive Preload)
+      // Loading Observer (Staggered Preload)
       loadingObserver = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               const index = parseInt(entry.target.dataset.index);
-              shouldLoadImage.value[index] = true;
-              loadingObserver.unobserve(entry.target); // Only need to trigger once
+              queueImageLoad(index);
+              loadingObserver.unobserve(entry.target);
             }
           });
         },
-        { rootMargin: "200% 0px 200% 0px" } // Load when within 2 viewports
+        { rootMargin: "50% 0px 50% 0px" }
       );
 
       imageRefs.value.forEach((ref) => {
@@ -468,22 +499,11 @@ onMounted(() => {
   });
 
   window.addEventListener("keydown", handleKeyDown);
-
-  if ($lenis) {
-    $lenis.on("scroll", handleLenisScroll);
-  } else {
-    window.addEventListener("scroll", handleScroll, { passive: true });
-  }
 });
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (loadingObserver) loadingObserver.disconnect();
-  
-  if ($lenis) {
-    $lenis.off("scroll", handleLenisScroll);
-  }
-  window.removeEventListener("scroll", handleScroll);
   window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
@@ -499,27 +519,33 @@ onUnmounted(() => {
   opacity: 0;
 }
 
+.image-cell {
+  transform: translateY(0) translateZ(0);
+  opacity: 1;
+  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.4s ease;
+  will-change: transform, opacity;
+}
+
+.image-cell.from-below {
+  transform: translateY(60px) translateZ(0);
+  opacity: 0;
+}
+
+.image-cell.from-above {
+  transform: translateY(-60px) translateZ(0);
+  opacity: 0;
+}
+
+.image-cell.is-visible {
+  transform: translateY(0) translateZ(0);
+  opacity: 1;
+}
+
 .image-item {
   position: relative;
   overflow: hidden;
   border-radius: 4px;
-}
-
-.v-lazy-image {
-  border-radius: 4px;
-}
-
-/* Add staggered delay classes */
-.delay-0 {
-  transition-delay: 0ms;
-}
-
-.delay-1 {
-  transition-delay: 100ms;
-}
-
-.delay-2 {
-  transition-delay: 200ms;
 }
 
 @media (max-width: 768px) {
@@ -527,14 +553,6 @@ onUnmounted(() => {
     max-width: 90vw;
     max-height: 70vh;
   }
-}
-
-.delay-3 {
-  transition-delay: 300ms;
-}
-
-.delay-4 {
-  transition-delay: 400ms;
 }
 
 .container {
