@@ -43,18 +43,9 @@
             }"
             :style="{ transitionDelay: `${(index % 4) * 60}ms` }"
           >
-            <!-- Placeholder / Cached Image (Background Layer) -->
-            <img
-              :src="getCachedImageUrl(image.id) || '/images/placeholder.svg'"
-              alt=""
-              class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-              :class="{ 'opacity-0': loadedImages[index] }"
-            />
-            
-            <!-- Real Image (Foreground Layer) -->
             <img
               v-if="shouldLoadImage[index]"
-              :src="image.media_asset.variants[2].url"
+              :src="image.media_asset.variants[1].url"
               :alt="image.tag_string || 'Image from gallery'"
               loading="lazy"
               class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
@@ -97,7 +88,7 @@
             v-show="enlargedImageLoaded"
             ref="enlargedImageRef"
             tabindex="0"
-            :src="getCachedImageUrl(selectedImage.id) || selectedImage.file_url"
+            :src="selectedImage.media_asset.variants[3]?.url || selectedImage.large_file_url || selectedImage.file_url"
             :alt="selectedImage.tag_string || 'Enlarged image from gallery'"
             :class="[
               'enlarged-image',
@@ -140,11 +131,9 @@ definePageMeta({
 const images = ref([]);
 const selectedImage = ref(null);
 const loadedImages = ref([]);
-const imageReady = ref([]);
-const revealedImages = ref([]);
+const shouldLoadImage = ref([]);
 const imageInView = ref([]);
 const imageDirection = ref([]);
-const shouldLoadImage = ref([]);
 const imageRefs = ref([]);
 const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
@@ -152,36 +141,6 @@ const hiddenIndex = ref(null);
 const enlargedImageRef = ref(null);
 let lastFocusedElement = null;
 const { $lenis } = useNuxtApp();
-
-// Staggered image loading queue — prevents browser connection saturation
-const loadQueue = [];
-let isProcessingQueue = false;
-const LOAD_BATCH_SIZE = 3;
-const LOAD_STAGGER_MS = 150;
-
-const processLoadQueue = () => {
-  if (isProcessingQueue || loadQueue.length === 0) return;
-  isProcessingQueue = true;
-  const batch = loadQueue.splice(0, LOAD_BATCH_SIZE);
-  batch.forEach((i) => {
-    shouldLoadImage.value[i] = true;
-  });
-  if (loadQueue.length > 0) {
-    setTimeout(() => {
-      isProcessingQueue = false;
-      processLoadQueue();
-    }, LOAD_STAGGER_MS);
-  } else {
-    isProcessingQueue = false;
-  }
-};
-
-const queueImageLoad = (index) => {
-  if (!shouldLoadImage.value[index]) {
-    loadQueue.push(index);
-    processLoadQueue();
-  }
-};
 
 const fetchImages = async () => {
   isLoading.value = true;
@@ -191,11 +150,9 @@ const fetchImages = async () => {
     const data = await response.json();
     images.value = data;
     loadedImages.value = new Array(data.length).fill(false);
-    imageReady.value = new Array(data.length).fill(false);
-    revealedImages.value = new Array(data.length).fill(false);
+    shouldLoadImage.value = new Array(data.length).fill(false);
     imageInView.value = new Array(data.length).fill(false);
     imageDirection.value = new Array(data.length).fill('below');
-    shouldLoadImage.value = new Array(data.length).fill(false);
   } catch (error) {
     console.error("Error fetching images:", error);
   } finally {
@@ -204,19 +161,7 @@ const fetchImages = async () => {
 };
 
 const onImageLoad = (index, image) => {
-  imageReady.value[index] = true;
-  cacheImage(image.id, image.file_url);
-  flushReveals();
-};
-
-// Reveal images sequentially — only show image N once 0..N-1 are all ready
-const flushReveals = () => {
-  for (let i = 0; i < imageReady.value.length; i++) {
-    if (revealedImages.value[i]) continue;
-    if (!imageReady.value[i]) break;
-    revealedImages.value[i] = true;
-    loadedImages.value[i] = true;
-  }
+  loadedImages.value[index] = true;
 };
 
 const openImage = (image, event) => {
@@ -294,8 +239,6 @@ const openImage = (image, event) => {
     document.body.removeChild(clone);
     selectedImage.value = image;
     enlargedImageLoaded.value = false;
-    cacheImage(image.id, image.file_url);
-    
     // Focus the enlarged image for accessibility
     nextTick(() => {
       enlargedImageRef.value?.focus();
@@ -402,21 +345,7 @@ const onEnlargedImageLoad = () => {
   enlargedImageLoaded.value = true;
 };
 
-const cacheImage = (id, url) => {
-  if (process.client) {
-    localStorage.setItem(`cachedImage_${id}`, url);
-  }
-};
-
-const getCachedImageUrl = (id) => {
-  if (process.client) {
-    return localStorage.getItem(`cachedImage_${id}`);
-  }
-  return null;
-};
-
 let observer;
-let loadingObserver;
 
 const handleKeyDown = (event) => {
   if (event.key === "Escape" && selectedImage.value) {
@@ -440,29 +369,27 @@ const handleModalKeyDown = (event) => {
     const prevImage = images.value[currentIndex - 1];
     selectedImage.value = prevImage;
     enlargedImageLoaded.value = false;
-    cacheImage(prevImage.id, prevImage.file_url);
   } else if (event.key === "ArrowRight" && currentIndex < images.value.length - 1) {
     event.preventDefault();
     const nextImage = images.value[currentIndex + 1];
     selectedImage.value = nextImage;
     enlargedImageLoaded.value = false;
-    cacheImage(nextImage.id, nextImage.file_url);
   }
 };
 
 onMounted(() => {
   fetchImages().then(() => {
     nextTick(() => {
-      // Animation Observer (Viewport) — tracks per-image direction
+      // Animation Observer (Viewport) — tracks per-image direction + triggers loading
       observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             const index = parseInt(entry.target.dataset.index);
             if (entry.isIntersecting) {
               imageInView.value[index] = true;
+              shouldLoadImage.value[index] = true;
             } else {
               imageInView.value[index] = false;
-              // Determine exit direction: if element is above viewport, it left upward
               const rect = entry.boundingClientRect;
               if (rect.bottom < 0) {
                 imageDirection.value[index] = 'above';
@@ -472,27 +399,12 @@ onMounted(() => {
             }
           });
         },
-        { threshold: 0.05 },
-      );
-
-      // Loading Observer (Staggered Preload)
-      loadingObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const index = parseInt(entry.target.dataset.index);
-              queueImageLoad(index);
-              loadingObserver.unobserve(entry.target);
-            }
-          });
-        },
-        { rootMargin: "50% 0px 50% 0px" }
+        { threshold: 0.05, rootMargin: "100% 0px 100% 0px" },
       );
 
       imageRefs.value.forEach((ref) => {
         if (ref) {
           observer.observe(ref);
-          loadingObserver.observe(ref);
         }
       });
     });
@@ -503,7 +415,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (observer) observer.disconnect();
-  if (loadingObserver) loadingObserver.disconnect();
   window.removeEventListener("keydown", handleKeyDown);
 });
 </script>
