@@ -24,7 +24,7 @@
           v-for="(image, index) in images"
           :key="image.id"
           class="image-item"
-          :style="{ aspectRatio: image.image_width && image.image_height ? `${image.image_width}/${image.image_height}` : '1/1' }"
+          :style="{ '--img-ratio': image.image_width && image.image_height ? `${image.image_width}/${image.image_height}` : '1/1' }"
           role="button"
           tabindex="0"
           :aria-label="`View image: ${image.tag_string || 'gallery image'}`"
@@ -473,6 +473,7 @@ onUnmounted(() => {
 .image-grid {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 5px;
 }
 
@@ -481,6 +482,7 @@ onUnmounted(() => {
   max-width: unset;
   margin-bottom: 5px;
   height: 200px;
+  aspect-ratio: var(--img-ratio, 1/1);
   cursor: pointer;
   transition: transform 0.3s ease-in-out;
 }
@@ -490,8 +492,15 @@ onUnmounted(() => {
 }
 
 @media (max-width: 780px) {
+  .image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
   .image-item {
-    height: 100px;
+    height: auto;
+    aspect-ratio: 1 / 1;
   }
 }
 
