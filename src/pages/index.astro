@@ -7,7 +7,16 @@ import SocialLinks from '../components/SocialLinks.vue';
 <BaseLayout title="Mooshieblob" description="Am blob">
   <SplashScreen client:load />
   <div class="index-content">
-    <SocialLinks client:load />
+    <div class="social-links flex">
+      <img
+        id="main-logo"
+        src="/assets/images/bloblogo.webp"
+        alt=""
+        class="social-logo"
+        transition:persist
+      />
+      <SocialLinks client:load />
+    </div>
     <div class="back-row-toggle splat-toggle">
       <img
         id="bg_girl"
@@ -18,6 +27,27 @@ import SocialLinks from '../components/SocialLinks.vue';
     </div>
   </div>
 </BaseLayout>
+
+<script>
+  // Handle logo visibility for splash screen
+  function initLogo() {
+    const logo = document.getElementById('main-logo');
+    if (!logo) return;
+    
+    if (sessionStorage.getItem('splash-shown')) {
+      logo.style.opacity = '1';
+    } else {
+      logo.style.opacity = '0';
+      document.addEventListener('splash-done', () => {
+        logo.style.transition = 'opacity 0.3s ease';
+        logo.style.opacity = '1';
+      }, { once: true });
+    }
+  }
+  
+  initLogo();
+  document.addEventListener('astro:after-swap', initLogo);
+</script>
 
 <style>
   .index-content {

@@ -76,16 +76,18 @@ onMounted(async () => {
     }, 50);
 
     setTimeout(() => {
+      sessionStorage.setItem('splash-shown', '1');
+      document.dispatchEvent(new CustomEvent('splash-done'));
       splashState.isAnimationDone = true;
       splashState.isSplashVisible = false;
-      sessionStorage.setItem('splash-shown', '1');
     }, 1250);
   } else {
     startFadeOut.value = true;
     setTimeout(() => {
+      sessionStorage.setItem('splash-shown', '1');
+      document.dispatchEvent(new CustomEvent('splash-done'));
       splashState.isAnimationDone = true;
       splashState.isSplashVisible = false;
-      sessionStorage.setItem('splash-shown', '1');
     }, 1000);
   }
 });
