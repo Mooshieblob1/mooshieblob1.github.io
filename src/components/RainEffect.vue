@@ -61,6 +61,9 @@ let girlRect: DOMRect | null = null;
 let girlMask: Uint8Array | null = null;
 let girlMaskW = 0;
 let girlMaskH = 0;
+let logoMask: Uint8Array | null = null;
+let logoMaskW = 0;
+let logoMaskH = 0;
 
 // Pre-rendered gradient strips for efficient raindrop drawing
 let gradientFront: HTMLCanvasElement;
@@ -118,35 +121,61 @@ function splashFromCursor(x: number, y: number, count: number) {
   addSplash(x, y, dx / d, dy / d, count);
 }
 
-// --- Raingirl alpha-mask collision ---
+// --- Alpha-mask collision helpers ---
+function isMaskSolid(
+  mask: Uint8Array, mw: number, mh: number,
+  rect: DOMRect, sx: number, sy: number,
+): boolean {
+  const ix = Math.floor(((sx - rect.left) / rect.width) * mw);
+  const iy = Math.floor(((sy - rect.top) / rect.height) * mh);
+  if (ix < 0 || ix >= mw || iy < 0 || iy >= mh) return false;
+  return mask[iy * mw + ix] > 128;
+}
+
 function isGirlSolid(sx: number, sy: number): boolean {
   if (!girlMask || !girlRect) return false;
-  const ix = Math.floor(((sx - girlRect.left) / girlRect.width) * girlMaskW);
-  const iy = Math.floor(((sy - girlRect.top) / girlRect.height) * girlMaskH);
-  if (ix < 0 || ix >= girlMaskW || iy < 0 || iy >= girlMaskH) return false;
-  return girlMask[iy * girlMaskW + ix] > 128;
+  return isMaskSolid(girlMask, girlMaskW, girlMaskH, girlRect, sx, sy);
+}
+
+function isLogoSolid(sx: number, sy: number): boolean {
+  if (!logoMask || !logoRect) return false;
+  return isMaskSolid(logoMask, logoMaskW, logoMaskH, logoRect, sx, sy);
+}
+
+function buildAlphaMask(el: HTMLImageElement, scale: number) {
+  const c = document.createElement('canvas');
+  c.width = Math.ceil(el.naturalWidth * scale);
+  c.height = Math.ceil(el.naturalHeight * scale);
+  const cx = c.getContext('2d', { willReadFrequently: true });
+  if (!cx) return null;
+  cx.drawImage(el, 0, 0, c.width, c.height);
+  const data = cx.getImageData(0, 0, c.width, c.height);
+  const mask = new Uint8Array(c.width * c.height);
+  for (let i = 0; i < mask.length; i++) {
+    mask[i] = data.data[i * 4 + 3];
+  }
+  return { mask, w: c.width, h: c.height };
 }
 
 function buildGirlMask() {
   const el = document.getElementById('bg_girl') as HTMLImageElement | null;
   if (!el || !el.naturalWidth) return;
   try {
-    const c = document.createElement('canvas');
-    const s = 0.2;
-    c.width = Math.ceil(el.naturalWidth * s);
-    c.height = Math.ceil(el.naturalHeight * s);
-    const cx = c.getContext('2d', { willReadFrequently: true });
-    if (!cx) return;
-    cx.drawImage(el, 0, 0, c.width, c.height);
-    const data = cx.getImageData(0, 0, c.width, c.height);
-    girlMaskW = c.width;
-    girlMaskH = c.height;
-    girlMask = new Uint8Array(c.width * c.height);
-    for (let i = 0; i < girlMask.length; i++) {
-      girlMask[i] = data.data[i * 4 + 3];
-    }
+    const result = buildAlphaMask(el, 0.2);
+    if (result) { girlMask = result.mask; girlMaskW = result.w; girlMaskH = result.h; }
   } catch {
     girlMask = null;
+  }
+}
+
+function buildLogoMask() {
+  const el = document.getElementById('main-logo') as HTMLImageElement | null;
+  if (!el || !el.naturalWidth) return;
+  try {
+    const result = buildAlphaMask(el, 0.3);
+    if (result) { logoMask = result.mask; logoMaskW = result.w; logoMaskH = result.h; }
+  } catch {
+    logoMask = null;
   }
 }
 
@@ -234,18 +263,20 @@ function frame() {
         }
       }
 
-      // Logo collision (bounding box, top edge)
+      // Logo collision (pixel-accurate via alpha mask)
       if (logoRect) {
         const tip = d.y + d.length;
         if (
-          d.x >= logoRect.left &&
-          d.x <= logoRect.right &&
           tip >= logoRect.top &&
-          tip <= logoRect.top + d.speed + 2
+          tip <= logoRect.bottom &&
+          d.x >= logoRect.left &&
+          d.x <= logoRect.right
         ) {
-          splashOnSurface(d.x, logoRect.top, 3);
-          drops[i] = makeDrop(false, false);
-          continue;
+          if (logoMask ? isLogoSolid(d.x, tip) : false) {
+            splashOnSurface(d.x, tip, 3);
+            drops[i] = makeDrop(false, false);
+            continue;
+          }
         }
       }
     } else {
@@ -340,11 +371,16 @@ onMounted(() => {
   for (let i = 0; i < FRONT_COUNT; i++) drops.push(makeDrop(true, false));
   for (let i = 0; i < BACK_COUNT; i++) drops.push(makeDrop(true, true));
 
-  // Build alpha mask from raingirl image for pixel-accurate collision
+  // Build alpha masks from images for pixel-accurate collision
   const girl = document.getElementById('bg_girl') as HTMLImageElement | null;
   if (girl) {
     if (girl.complete && girl.naturalWidth) buildGirlMask();
     else girl.addEventListener('load', buildGirlMask, { once: true });
+  }
+  const logo = document.getElementById('main-logo') as HTMLImageElement | null;
+  if (logo) {
+    if (logo.complete && logo.naturalWidth) buildLogoMask();
+    else logo.addEventListener('load', buildLogoMask, { once: true });
   }
 
   updateRects();
