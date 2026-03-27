@@ -48,6 +48,9 @@ let height = 0;
 let ctxFront: CanvasRenderingContext2D | null = null;
 let ctxBack: CanvasRenderingContext2D | null = null;
 let frameId = 0;
+let lastTime = 0;
+const TARGET_FPS = 60;
+const TARGET_DT = 1000 / TARGET_FPS;
 
 // Cursor tracking (same 0.15 easing as CursorFollower)
 let mouseX = -200;
@@ -198,15 +201,24 @@ function resize() {
 }
 
 // --- Main animation loop ---
-function frame() {
+function frame(now: number) {
   if (!ctxFront || !ctxBack) return;
+
+  // Delta-time: normalize so movement is consistent regardless of FPS
+  if (!lastTime) lastTime = now;
+  const rawDt = now - lastTime;
+  lastTime = now;
+  // Clamp dt to avoid huge jumps after tab-away (cap at ~4 frames)
+  const dt = Math.min(rawDt, TARGET_DT * 4) / TARGET_DT;
+
   ctxFront.clearRect(0, 0, width, height);
   ctxBack.clearRect(0, 0, width, height);
 
-  // Smooth cursor tracking
+  // Smooth cursor tracking (dt-scaled lerp)
   if (mouseActive) {
-    cursorX += (mouseX - cursorX) * 0.15;
-    cursorY += (mouseY - cursorY) * 0.15;
+    const lerpFactor = 1 - Math.pow(1 - 0.15, dt);
+    cursorX += (mouseX - cursorX) * lerpFactor;
+    cursorY += (mouseY - cursorY) * lerpFactor;
   }
 
   // --- Update drops ---
@@ -240,14 +252,14 @@ function frame() {
 
           // Approaching the ring — deflect away from the circle edge
           const strength = Math.pow(1 - edgeDist / DEFLECT_RADIUS, 2);
-          d.x += (dx / dist) * strength * 5;
-          d.y += d.speed * (1 - strength * 0.6);
+          d.x += (dx / dist) * strength * 5 * dt;
+          d.y += d.speed * (1 - strength * 0.6) * dt;
           deflected = true;
         }
       }
 
       if (!deflected) {
-        d.y += d.speed;
+        d.y += d.speed * dt;
       }
 
       // Raingirl collision (pixel-accurate via alpha mask)
@@ -285,7 +297,7 @@ function frame() {
       }
     } else {
       // Back drops just fall straight — no collisions
-      d.y += d.speed;
+      d.y += d.speed * dt;
     }
 
     // Off-screen recycling
@@ -297,10 +309,10 @@ function frame() {
   // --- Update particles (always drawn on front layer) ---
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += 0.15;
-    p.life -= p.decay;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 0.15 * dt;
+    p.life -= p.decay * dt;
     if (p.life <= 0) {
       particles[i] = particles[particles.length - 1];
       particles.pop();
@@ -330,6 +342,11 @@ function frame() {
   ctxFront.globalAlpha = 1;
 
   frameId = requestAnimationFrame(frame);
+}
+
+// Reset lastTime when visibility changes to avoid dt spike on tab-back
+function onVisibilityChange() {
+  if (!document.hidden) lastTime = 0;
 }
 
 // --- Event handlers ---
@@ -391,7 +408,9 @@ onMounted(() => {
   rectTimer = window.setInterval(updateRects, 500);
   window.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseleave', onMouseLeave);
+  document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('resize', resize);
+  lastTime = 0;
   frameId = requestAnimationFrame(frame);
 });
 
@@ -400,6 +419,7 @@ onUnmounted(() => {
   clearInterval(rectTimer);
   window.removeEventListener('mousemove', onMouseMove);
   document.removeEventListener('mouseleave', onMouseLeave);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
   window.removeEventListener('resize', resize);
   drops = [];
   particles = [];

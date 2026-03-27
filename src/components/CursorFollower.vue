@@ -14,6 +14,8 @@ const targetX = ref(-100);
 const targetY = ref(-100);
 const initialized = ref(false);
 let animationFrameId: number;
+let lastTime = 0;
+const TARGET_DT = 1000 / 60;
 
 const updateCursor = (e: MouseEvent) => {
   targetX.value = e.clientX;
@@ -26,12 +28,17 @@ const updateCursor = (e: MouseEvent) => {
   }
 };
 
-const animate = () => {
-  const speed = 0.15;
+const animate = (now: number) => {
+  if (!lastTime) lastTime = now;
+  const rawDt = now - lastTime;
+  lastTime = now;
+  const dt = Math.min(rawDt, TARGET_DT * 4) / TARGET_DT;
+
+  const lerpFactor = 1 - Math.pow(1 - 0.15, dt);
   const dx = targetX.value - x.value;
   const dy = targetY.value - y.value;
-  x.value += dx * speed;
-  y.value += dy * speed;
+  x.value += dx * lerpFactor;
+  y.value += dy * lerpFactor;
   animationFrameId = requestAnimationFrame(animate);
 };
 
