@@ -35,8 +35,9 @@ const FRONT_COUNT = 90;
 const BACK_COUNT = 40;
 const DROP_COUNT = FRONT_COUNT + BACK_COUNT;
 const MAX_PARTICLES = 300;
-const DEFLECT_RADIUS = 80;
-const SPLASH_RADIUS = 24;
+const CIRCLE_RADIUS = 20; // matches CursorFollower's 40px / 2
+const DEFLECT_RADIUS = 60; // outer influence zone beyond the circle edge
+const SPLASH_TOLERANCE = 3; // how close to the edge before splashing
 const BACK_OPACITY = 0.35; // dimmer for depth
 
 // --- State ---
@@ -112,13 +113,6 @@ function addSplash(x: number, y: number, dirX: number, dirY: number, count: numb
 
 function splashOnSurface(x: number, y: number, count: number) {
   addSplash(x, y, 0, -1, count);
-}
-
-function splashFromCursor(x: number, y: number, count: number) {
-  const dx = x - cursorX;
-  const dy = y - cursorY;
-  const d = Math.sqrt(dx * dx + dy * dy) || 1;
-  addSplash(x, y, dx / d, dy / d, count);
 }
 
 // --- Alpha-mask collision helpers ---
@@ -222,23 +216,33 @@ function frame() {
 
     // Front drops interact with cursor, girl, and logo
     if (!d.back) {
-      // Cursor deflection
+      // Cursor circle deflection — rain interacts with the yellow ring edge
       if (mouseActive) {
         const dx = d.x - cursorX;
         const dy = d.y + d.length * 0.5 - cursorY;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        const outerZone = CIRCLE_RADIUS + DEFLECT_RADIUS;
 
-        if (dist < DEFLECT_RADIUS && dist > 0) {
-          const strength = Math.pow(1 - dist / DEFLECT_RADIUS, 2);
-          d.x += (dx / dist) * strength * 5;
-          d.y += d.speed * (1 - strength * 0.6);
-          deflected = true;
+        if (dist < outerZone && dist > 0) {
+          // Distance from the circle edge (negative = inside circle)
+          const edgeDist = dist - CIRCLE_RADIUS;
 
-          if (dist < SPLASH_RADIUS) {
-            splashFromCursor(d.x, d.y + d.length, 3);
+          if (edgeDist <= SPLASH_TOLERANCE) {
+            // Hit the circle edge — splash outward from ring surface
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const splashX = cursorX + nx * CIRCLE_RADIUS;
+            const splashY = cursorY + ny * CIRCLE_RADIUS;
+            addSplash(splashX, splashY, nx, ny, 3);
             drops[i] = makeDrop(false, false);
             continue;
           }
+
+          // Approaching the ring — deflect away from the circle edge
+          const strength = Math.pow(1 - edgeDist / DEFLECT_RADIUS, 2);
+          d.x += (dx / dist) * strength * 5;
+          d.y += d.speed * (1 - strength * 0.6);
+          deflected = true;
         }
       }
 
