@@ -437,14 +437,14 @@ onUnmounted(() => {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 5px;
-  padding: 2.5%;
+  gap: 8px;
+  padding: 0;
 }
 
 .image-item {
   flex: 1 0 auto;
   max-width: unset;
-  margin-bottom: 5px;
+  margin-bottom: 0;
   height: 200px;
   aspect-ratio: var(--img-ratio, 1/1);
   cursor: pointer;
@@ -459,7 +459,7 @@ onUnmounted(() => {
   .image-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 4px;
+    gap: 8px;
   }
 
   .image-item {

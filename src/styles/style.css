@@ -178,7 +178,8 @@ body.splat-toggle .splat {
 }
 .social-links > img {
   width: 250px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  padding: 8px;
 }
 #bg_girl {
   height: 90vh;
@@ -203,5 +204,5 @@ body.splat-toggle .splat {
 .social-links {
   background-color: rgba(2, 6, 26, 0.5);
   border-radius: 10px;
-  padding: 10px;
+  padding: 12px;
 }
