@@ -92,7 +92,7 @@ function makeDrop(scatter = false, back?: boolean): Drop {
   return {
     x: Math.random() * width,
     y: scatter ? -(Math.random() * height) : -(Math.random() * 20),
-    speed: isBack ? 4 + Math.random() * 6 : 6 + Math.random() * 10,
+    speed: isBack ? 4.6 + Math.random() * 6.9 : 6.9 + Math.random() * 11.5,
     length: isBack ? 8 + Math.random() * 12 : 10 + Math.random() * 20,
     back: isBack,
   };
@@ -392,16 +392,24 @@ onMounted(() => {
   for (let i = 0; i < FRONT_COUNT; i++) drops.push(makeDrop(true, false));
   for (let i = 0; i < BACK_COUNT; i++) drops.push(makeDrop(true, true));
 
-  // Build alpha masks from images for pixel-accurate collision
+  // Defer alpha mask building so it doesn't block initial frames
+  const deferMask = (fn: () => void) => {
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(fn);
+    } else {
+      setTimeout(fn, 200);
+    }
+  };
+
   const girl = document.getElementById('bg_girl') as HTMLImageElement | null;
   if (girl) {
-    if (girl.complete && girl.naturalWidth) buildGirlMask();
-    else girl.addEventListener('load', buildGirlMask, { once: true });
+    if (girl.complete && girl.naturalWidth) deferMask(buildGirlMask);
+    else girl.addEventListener('load', () => deferMask(buildGirlMask), { once: true });
   }
   const logo = document.getElementById('main-logo') as HTMLImageElement | null;
   if (logo) {
-    if (logo.complete && logo.naturalWidth) buildLogoMask();
-    else logo.addEventListener('load', buildLogoMask, { once: true });
+    if (logo.complete && logo.naturalWidth) deferMask(buildLogoMask);
+    else logo.addEventListener('load', () => deferMask(buildLogoMask), { once: true });
   }
 
   updateRects();

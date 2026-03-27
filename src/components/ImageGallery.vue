@@ -6,74 +6,74 @@
       <span class="sr-only">Loading images...</span>
     </div>
 
-    <div v-else class="image-grid">
+    <div v-else ref="gridRef" class="image-grid">
       <div
-        v-for="(image, index) in images"
-        :key="image.id"
-        class="image-item"
-        :style="{ '--img-ratio': image.image_width && image.image_height ? `${image.image_width}/${image.image_height}` : '1/1' }"
-        role="button"
-        tabindex="0"
-        :aria-label="`View image: ${image.tag_string || 'gallery image'}`"
-        @click="(e) => openImage(image, e)"
-        @keydown.enter="(e) => openImage(image, e)"
-        @keydown.space.prevent="(e) => openImage(image, e)"
+        v-for="(col, colIdx) in columns"
+        :key="colIdx"
+        class="masonry-column"
       >
         <div
-          :ref="(el) => setImageRef(index, el)"
-          :data-index="index"
-          class="image-cell h-full relative overflow-hidden rounded-[4px]"
-          :class="{
-            'is-visible': imageInView[index],
-            'from-below': !imageInView[index] && imageDirection[index] === 'below',
-            'from-above': !imageInView[index] && imageDirection[index] === 'above',
-          }"
-          :style="{ transitionDelay: `${(index % 4) * 60}ms` }"
+          v-for="item in col"
+          :key="item.image.id"
+          class="image-item"
+          role="button"
+          tabindex="0"
+          :aria-label="`View image: ${item.image.tag_string || 'gallery image'}`"
+          @click="(e) => openImage(item.image, e)"
+          @keydown.enter="(e) => openImage(item.image, e)"
+          @keydown.space.prevent="(e) => openImage(item.image, e)"
+          @pointerenter="preloadFullImage(item.image)"
         >
-          <img
-            v-if="shouldLoadImage[index]"
-            :src="image.media_asset.variants[1].url"
-            :alt="image.tag_string || 'Image from gallery'"
-            loading="lazy"
-            class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-            :class="{ 'opacity-100': loadedImages[index], 'opacity-0': !loadedImages[index] }"
-            @load="onImageLoad(index)"
-          />
+          <div
+            :ref="(el) => setImageRef(item.index, el)"
+            :data-index="item.index"
+            class="image-cell relative overflow-hidden rounded-[4px]"
+            :class="{
+              'is-visible': imageInView[item.index],
+              'from-below': !imageInView[item.index] && imageDirection[item.index] === 'below',
+              'from-above': !imageInView[item.index] && imageDirection[item.index] === 'above',
+            }"
+            :style="{
+              transitionDelay: `${(item.index % 4) * 60}ms`,
+              aspectRatio: getAspectRatio(item.image),
+            }"
+          >
+            <img
+              v-if="shouldLoadImage[item.index]"
+              :src="item.image.media_asset.variants[1].url"
+              :alt="item.image.tag_string || 'Image from gallery'"
+              loading="lazy"
+              class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
+              :class="{ 'opacity-100': loadedImages[item.index], 'opacity-0': !loadedImages[item.index] }"
+              @load="onImageLoad(item.index)"
+            />
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Enlarged Image Modal -->
+    <!-- Bokeh backdrop (fades in/out independently of modal content) -->
+    <Teleport to="body">
+      <div
+        v-if="overlayVisible"
+        ref="overlayRef"
+        class="image-backdrop"
+        @click="closeImage"
+      ></div>
+    </Teleport>
+
+    <!-- Modal content (shown after open animation finishes) -->
     <Teleport to="body">
       <div
         v-if="selectedImage"
-        class="image-overlay"
+        class="image-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Enlarged image view"
         @click.self="closeImage"
         @keydown="handleModalKeyDown"
+        tabindex="0"
       >
-        <!-- Loading Spinner for enlarged image -->
-        <div v-if="!enlargedImageLoaded" role="status" aria-live="polite">
-          <div class="spinner" aria-hidden="true"></div>
-          <span class="sr-only">Loading full size image...</span>
-        </div>
-
-        <img
-          v-show="enlargedImageLoaded"
-          ref="enlargedImageRef"
-          tabindex="0"
-          :src="selectedImage.media_asset.variants[3]?.url || selectedImage.large_file_url || selectedImage.file_url"
-          :alt="selectedImage.tag_string || 'Enlarged image from gallery'"
-          :class="[
-            'enlarged-image',
-            'h-auto max-h-[40vh] w-auto max-w-[40vw] object-contain',
-            { loaded: enlargedImageLoaded },
-          ]"
-          @load="onEnlargedImageLoad"
-        />
-
         <!-- Close button for accessibility -->
         <button
           @click="closeImage"
@@ -120,11 +120,86 @@ const shouldLoadImage = ref<boolean[]>([]);
 const imageInView = ref<boolean[]>([]);
 const imageDirection = ref<string[]>([]);
 const imageRefs = ref<Record<number, Element | null>>({});
-const enlargedImageLoaded = ref(false);
 const isLoading = ref(true);
 const hiddenIndex = ref<number | null>(null);
-const enlargedImageRef = ref<HTMLImageElement | null>(null);
+const gridRef = ref<HTMLElement | null>(null);
+const overlayVisible = ref(false);
+const overlayRef = ref<HTMLElement | null>(null);
 let lastFocusedElement: Element | null = null;
+let placeholderClone: HTMLElement | null = null;
+let fullSizeLoader: HTMLImageElement | null = null;
+let openOriginalRect: DOMRect | null = null; // untransformed rect from open
+
+// --- Masonry layout ---
+const GAP = 8;
+const columns = ref<{ image: GalleryImage; index: number }[][]>([]);
+const isMobile = ref(false);
+
+function getAspectRatio(image: GalleryImage): number {
+  if (image.image_width && image.image_height) return image.image_width / image.image_height;
+  return 1;
+}
+
+function computeLayout() {
+  if (!gridRef.value || images.value.length === 0) return;
+
+  const containerWidth = gridRef.value.clientWidth;
+  isMobile.value = containerWidth <= 780;
+
+  if (isMobile.value) {
+    // Mobile: 2 columns, simple round-robin
+    const cols: { image: GalleryImage; index: number }[][] = [[], []];
+    images.value.forEach((img, i) => cols[i % 2].push({ image: img, index: i }));
+    columns.value = cols;
+    return;
+  }
+
+  // Determine column count from container width
+  const minColWidth = 200;
+  const colCount = Math.max(2, Math.min(8, Math.floor((containerWidth + GAP) / (minColWidth + GAP))));
+  const colWidth = (containerWidth - (colCount - 1) * GAP) / colCount;
+
+  // Place each image into the shortest column
+  const cols: { image: GalleryImage; index: number }[][] = Array.from({ length: colCount }, () => []);
+  const colHeights = new Float64Array(colCount);
+
+  for (let i = 0; i < images.value.length; i++) {
+    const img = images.value[i];
+    const ratio = getAspectRatio(img);
+    const itemHeight = colWidth / ratio;
+
+    // Find shortest column
+    let shortest = 0;
+    for (let c = 1; c < colCount; c++) {
+      if (colHeights[c] < colHeights[shortest]) shortest = c;
+    }
+
+    cols[shortest].push({ image: img, index: i });
+    colHeights[shortest] += itemHeight + GAP;
+  }
+
+  columns.value = cols;
+}
+
+// Spring with slight overshoot for bouncy settle
+const BOUNCE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 22, mass: 1 };
+
+// Preload full-size images on hover — track which are fully cached
+const preloadedUrls = new Set<string>();
+const cachedUrls = new Set<string>();
+function getFullUrl(image: GalleryImage): string {
+  return image.media_asset.variants[3]?.url || image.large_file_url || image.file_url || '';
+}
+function preloadFullImage(image: GalleryImage) {
+  const url = getFullUrl(image);
+  if (!url || preloadedUrls.has(url)) return;
+  preloadedUrls.add(url);
+  const img = new Image();
+  img.onload = () => { cachedUrls.add(url); };
+  img.src = url;
+  // Already complete (cached from a previous visit)
+  if (img.complete) cachedUrls.add(url);
+}
 
 function setImageRef(index: number, el: any) {
   imageRefs.value[index] = el;
@@ -175,12 +250,25 @@ const openImage = (image: GalleryImage, event: Event) => {
   });
 
   document.body.appendChild(clone);
+  openOriginalRect = rect;
 
   const index = images.value.findIndex((img) => img.id === image.id);
   hiddenIndex.value = index;
 
   const original = imageRefs.value[index]?.querySelector('img');
   if (original) (original as HTMLElement).style.visibility = 'hidden';
+
+  // Fade in bokeh backdrop during the animation
+  overlayVisible.value = true;
+  nextTick(() => {
+    if (overlayRef.value) {
+      animate(
+        overlayRef.value,
+        { opacity: [0, 1], backdropFilter: ['blur(0px)', 'blur(16px)'] },
+        { duration: 0.45, easing: [0.25, 0.46, 0.45, 0.94] },
+      );
+    }
+  });
 
   const vw = window.innerWidth;
   const vh = window.innerHeight;
@@ -208,41 +296,91 @@ const openImage = (image: GalleryImage, event: Event) => {
     {
       transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
     },
-    {
-      duration: 0.5,
-      easing: 'ease-in-out',
-    },
+    BOUNCE_SPRING,
   ).then(() => {
-    document.body.removeChild(clone);
+    placeholderClone = clone;
     selectedImage.value = image;
-    enlargedImageLoaded.value = false;
     nextTick(() => {
-      enlargedImageRef.value?.focus();
+      // Focus the modal overlay for keyboard events
+      const modal = document.querySelector('.image-modal') as HTMLElement | null;
+      modal?.focus();
     });
+
+    // Load the full-size image and swap it onto the clone seamlessly
+    const fullUrl = getFullUrl(image);
+    if (fullUrl) {
+      // If already cached, swap immediately
+      if (cachedUrls.has(fullUrl)) {
+        swapToFullSize(fullUrl);
+      } else {
+        fullSizeLoader = new Image();
+        fullSizeLoader.onload = () => {
+          cachedUrls.add(fullUrl);
+          swapToFullSize(fullUrl);
+          fullSizeLoader = null;
+        };
+        fullSizeLoader.src = fullUrl;
+      }
+    }
   });
 };
 
-const closeImage = () => {
-  const modalImg = document.querySelector('.enlarged-image.loaded') as HTMLElement | null;
-  if (!modalImg || !selectedImage.value) {
-    selectedImage.value = null;
-    enlargedImageLoaded.value = false;
-    if (lastFocusedElement) {
-      (lastFocusedElement as HTMLElement).focus();
-      lastFocusedElement = null;
+function swapToFullSize(url: string) {
+  if (!placeholderClone) return;
+  // Decode before swapping to avoid any flash
+  const img = new Image();
+  img.src = url;
+  (img.decode ? img.decode() : Promise.resolve()).then(() => {
+    if (placeholderClone) {
+      (placeholderClone as HTMLImageElement).src = url;
     }
-    return;
+  }).catch(() => {
+    // decode() can fail on some browsers/formats, swap anyway
+    if (placeholderClone) {
+      (placeholderClone as HTMLImageElement).src = url;
+    }
+  });
+}
+
+const closeImage = () => {
+  if (!selectedImage.value && !placeholderClone) return;
+
+  // Cancel any in-flight full-size load
+  if (fullSizeLoader) {
+    fullSizeLoader.onload = null;
+    fullSizeLoader = null;
   }
 
+  // The placeholder clone IS the displayed image — use it directly for close animation
+  const clone = placeholderClone;
+  placeholderClone = null;
+
+  // Find grid target
   const gridImg =
     hiddenIndex.value !== null
       ? (imageRefs.value[hiddenIndex.value]?.querySelector('img') as HTMLElement | null)
       : null;
+  const gridRect = gridImg?.getBoundingClientRect();
 
-  if (!gridImg) {
-    selectedImage.value = null;
-    enlargedImageLoaded.value = false;
+  // Clear modal state
+  selectedImage.value = null;
+
+  // Fade out bokeh backdrop
+  if (overlayRef.value) {
+    animate(
+      overlayRef.value,
+      { opacity: 0, backdropFilter: 'blur(0px)' },
+      { duration: 0.45, easing: [0.25, 0.46, 0.45, 0.94] },
+    ).then(() => { overlayVisible.value = false; });
+  } else {
+    overlayVisible.value = false;
+  }
+
+  // No clone or grid target — just clean up
+  if (!clone || !gridRect || !openOriginalRect) {
+    if (clone?.parentNode) clone.parentNode.removeChild(clone);
     hiddenIndex.value = null;
+    if (gridImg) gridImg.style.visibility = 'visible';
     if (lastFocusedElement) {
       (lastFocusedElement as HTMLElement).focus();
       lastFocusedElement = null;
@@ -250,52 +388,27 @@ const closeImage = () => {
     return;
   }
 
-  const gridRect = gridImg.getBoundingClientRect();
-  const modalRect = modalImg.getBoundingClientRect();
+  // Compute close transform relative to the clone's original untransformed position.
+  // The clone's CSS top/left/width/height are still the original thumbnail values.
+  const orig = openOriginalRect!;
+  const origCenterX = orig.left + orig.width / 2;
+  const origCenterY = orig.top + orig.height / 2;
+  const gridCenterX = gridRect.left + gridRect.width / 2;
+  const gridCenterY = gridRect.top + gridRect.height / 2;
 
-  const clone = modalImg.cloneNode(true) as HTMLElement;
-  Object.assign(clone.style, {
-    position: 'fixed',
-    top: `${modalRect.top}px`,
-    left: `${modalRect.left}px`,
-    width: `${modalRect.width}px`,
-    height: `${modalRect.height}px`,
-    zIndex: '2147483647',
-    borderRadius: '4px',
-    pointerEvents: 'none',
-    margin: '0',
-    transform: 'translate(0, 0)',
-    transformOrigin: 'center center',
-    willChange: 'transform',
-  });
-
-  document.body.appendChild(clone);
-  selectedImage.value = null;
-  enlargedImageLoaded.value = false;
-
-  const centerX = modalRect.left + modalRect.width / 2;
-  const centerY = modalRect.top + modalRect.height / 2;
-
-  const targetX = gridRect.left + gridRect.width / 2;
-  const targetY = gridRect.top + gridRect.height / 2;
-
-  const translateX = targetX - centerX;
-  const translateY = targetY - centerY;
-
-  const scaleX = gridRect.width / modalRect.width;
-  const scaleY = gridRect.height / modalRect.height;
+  const translateX = gridCenterX - origCenterX;
+  const translateY = gridCenterY - origCenterY;
+  const scaleX = gridRect.width / orig.width;
+  const scaleY = gridRect.height / orig.height;
 
   animate(
     clone,
     {
       transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
     },
-    {
-      duration: 0.5,
-      easing: 'ease-in-out',
-    },
+    BOUNCE_SPRING,
   ).then(() => {
-    document.body.removeChild(clone);
+    if (clone.parentNode) clone.parentNode.removeChild(clone);
     if (gridImg) gridImg.style.visibility = 'visible';
     hiddenIndex.value = null;
 
@@ -306,15 +419,19 @@ const closeImage = () => {
   });
 };
 
-const onEnlargedImageLoad = () => {
-  enlargedImageLoaded.value = true;
-};
+function removePlaceholder() {
+  if (placeholderClone && placeholderClone.parentNode) {
+    placeholderClone.parentNode.removeChild(placeholderClone);
+  }
+  placeholderClone = null;
+}
 
 let loadObserver: IntersectionObserver;
 let animObserver: IntersectionObserver;
+let resizeObserver: ResizeObserver;
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && selectedImage.value) {
+  if (event.key === 'Escape' && (selectedImage.value || overlayVisible.value)) {
     closeImage();
   }
 };
@@ -330,18 +447,42 @@ const handleModalKeyDown = (event: KeyboardEvent) => {
 
   if (event.key === 'ArrowLeft' && currentIndex > 0) {
     event.preventDefault();
-    selectedImage.value = images.value[currentIndex - 1];
-    enlargedImageLoaded.value = false;
+    const newImage = images.value[currentIndex - 1];
+    selectedImage.value = newImage;
+    // Swap placeholder clone to new thumbnail, then load full-size
+    if (placeholderClone) {
+      (placeholderClone as HTMLImageElement).src = newImage.media_asset.variants[1].url;
+    }
+    const fullUrl = getFullUrl(newImage);
+    if (fullUrl) swapToFullSize(fullUrl);
   } else if (event.key === 'ArrowRight' && currentIndex < images.value.length - 1) {
     event.preventDefault();
-    selectedImage.value = images.value[currentIndex + 1];
-    enlargedImageLoaded.value = false;
+    const newImage = images.value[currentIndex + 1];
+    selectedImage.value = newImage;
+    if (placeholderClone) {
+      (placeholderClone as HTMLImageElement).src = newImage.media_asset.variants[1].url;
+    }
+    const fullUrl = getFullUrl(newImage);
+    if (fullUrl) swapToFullSize(fullUrl);
   }
 };
 
 onMounted(() => {
   fetchImages().then(() => {
     nextTick(() => {
+      computeLayout();
+
+      // Recompute layout when container resizes
+      if (gridRef.value) {
+        resizeObserver = new ResizeObserver(() => {
+          computeLayout();
+        });
+        resizeObserver.observe(gridRef.value);
+      }
+
+      // Wait for columns to render before attaching observers
+      nextTick(() => {
+
       // Preload observer: large margin to add <img> to DOM early
       loadObserver = new IntersectionObserver(
         (entries) => {
@@ -383,6 +524,7 @@ onMounted(() => {
           animObserver.observe(ref);
         }
       });
+      }); // end inner nextTick
     });
   });
 
@@ -392,6 +534,7 @@ onMounted(() => {
 onUnmounted(() => {
   if (loadObserver) loadObserver.disconnect();
   if (animObserver) animObserver.disconnect();
+  if (resizeObserver) resizeObserver.disconnect();
   window.removeEventListener('keydown', handleKeyDown);
 });
 </script>
@@ -420,88 +563,63 @@ onUnmounted(() => {
   opacity: 1;
 }
 
+.image-grid {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.masonry-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
 .image-item {
   position: relative;
   overflow: hidden;
   border-radius: 4px;
-}
-
-@media (max-width: 768px) {
-  .enlarged-image {
-    max-width: 90vw;
-    max-height: 70vh;
-  }
-}
-
-.image-grid {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  padding: 0;
-}
-
-.image-item {
-  flex: 1 0 auto;
-  max-width: unset;
-  margin-bottom: 0;
-  height: 200px;
-  aspect-ratio: var(--img-ratio, 1/1);
   cursor: pointer;
-  transition: transform 0.3s ease-in-out;
 }
 
 .image-item:hover img {
   transform: scale(1.1);
 }
 
-@media (max-width: 780px) {
-  .image-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .image-item {
-    height: auto;
-    aspect-ratio: 1 / 1;
-  }
-}
-
 .image-item img {
-  object-fit: cover;
+  display: block;
+  width: 100%;
   height: 100%;
-  width: fit-content;
-  max-width: unset;
+  object-fit: cover;
   transition: transform 0.3s ease-in-out;
   border-radius: 4px;
 }
 
-.image-overlay {
+.image-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 998;
+  opacity: 0;
+}
+
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
-}
-
-.enlarged-image {
-  max-width: 80vw;
-  max-height: 80vh;
-  object-fit: contain;
-  width: auto;
-  border-radius: 4px;
-  height: auto;
-}
-
-.enlarged-image.loaded {
-  opacity: 1;
-  transform: scale(1);
 }
 
 .spinner {

@@ -1,30 +1,29 @@
 <template>
-  <div
-    class="cursor-follower"
-    :style="{ left: x + 'px', top: y + 'px' }"
-  ></div>
+  <div ref="el" class="cursor-follower"></div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const x = ref(-100);
-const y = ref(-100);
-const targetX = ref(-100);
-const targetY = ref(-100);
-const initialized = ref(false);
+const el = ref<HTMLElement | null>(null);
+
+let targetX = -100;
+let targetY = -100;
+let curX = -100;
+let curY = -100;
+let initialized = false;
 let animationFrameId: number;
 let lastTime = 0;
 const TARGET_DT = 1000 / 60;
 
 const updateCursor = (e: MouseEvent) => {
-  targetX.value = e.clientX;
-  targetY.value = e.clientY;
+  targetX = e.clientX;
+  targetY = e.clientY;
 
-  if (!initialized.value) {
-    x.value = e.clientX;
-    y.value = e.clientY;
-    initialized.value = true;
+  if (!initialized) {
+    curX = e.clientX;
+    curY = e.clientY;
+    initialized = true;
   }
 };
 
@@ -35,20 +34,29 @@ const animate = (now: number) => {
   const dt = Math.min(rawDt, TARGET_DT * 4) / TARGET_DT;
 
   const lerpFactor = 1 - Math.pow(1 - 0.15, dt);
-  const dx = targetX.value - x.value;
-  const dy = targetY.value - y.value;
-  x.value += dx * lerpFactor;
-  y.value += dy * lerpFactor;
+  curX += (targetX - curX) * lerpFactor;
+  curY += (targetY - curY) * lerpFactor;
+
+  if (el.value) {
+    el.value.style.transform = `translate(${curX - 20}px, ${curY - 20}px)`;
+  }
+
   animationFrameId = requestAnimationFrame(animate);
 };
 
+function onVisibilityChange() {
+  if (!document.hidden) lastTime = 0;
+}
+
 onMounted(() => {
   window.addEventListener('mousemove', updateCursor);
-  animate();
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  animationFrameId = requestAnimationFrame(animate);
 });
 
 onUnmounted(() => {
   window.removeEventListener('mousemove', updateCursor);
+  document.removeEventListener('visibilitychange', onVisibilityChange);
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
   }
@@ -58,13 +66,15 @@ onUnmounted(() => {
 <style scoped>
 .cursor-follower {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 40px;
   height: 40px;
   border: 2px solid #ffcc00;
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  transform: translate(-50%, -50%);
+  will-change: transform;
 }
 
 @media (hover: none) {

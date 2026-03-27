@@ -93,8 +93,14 @@ const currentYear = new Date().getFullYear();
     <script>
       import Lenis from 'lenis';
 
+      let lenis: Lenis | null = null;
+
       function initLenis() {
-        const lenis = new Lenis({
+        if (lenis) {
+          lenis.destroy();
+          lenis = null;
+        }
+        lenis = new Lenis({
           autoRaf: true,
           duration: 1.2,
           easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
