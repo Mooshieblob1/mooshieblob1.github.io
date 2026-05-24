@@ -158,7 +158,7 @@ function buildGirlMask() {
   const el = document.getElementById('bg_girl') as HTMLImageElement | null;
   if (!el || !el.naturalWidth) return;
   try {
-    const result = buildAlphaMask(el, 0.2);
+    const result = buildAlphaMask(el, 0.25);
     if (result) { girlMask = result.mask; girlMaskW = result.w; girlMaskH = result.h; }
   } catch {
     girlMask = null;
