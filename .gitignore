@@ -24,3 +24,4 @@ logs
 !.env.example
 .devcontainer/devcontainer.json
 .claude/settings.json
+.cursor/rules/no-cursor-branding.mdc

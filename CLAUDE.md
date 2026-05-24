@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## GitHub and commits
+
+Never add Cursor, Copilot, or other AI-tool branding to PRs, merge messages, commit messages, release notes, or issue comments (e.g. "Made with Cursor"). Write in plain project voice with no tool attribution.
+
 ## Commands
 
 - **Dev server:** `pnpm dev`
