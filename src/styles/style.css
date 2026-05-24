@@ -48,11 +48,6 @@ footer {
   padding: 10px 0;
 }
 
-#ipv6 {
-  height: 18px;
-  margin-left: 10px;
-}
-
 .footer-text {
   display: flex;
   justify-content: center;

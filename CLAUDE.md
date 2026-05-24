@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-**Astro 5 static site** with **Vue 3** components for interactivity and **Tailwind CSS** for styling. Deployed to GitHub Pages at mooshieblob.com.
+**Astro 5 static site** with **Vue 3** components for interactivity and **Tailwind CSS** for styling. Deployed to Cloudflare Pages at mooshieblob.com.
 
 ### Rendering Model
 
@@ -27,6 +27,7 @@ Astro pages and layouts are server-rendered at build time. Vue components use `c
 - `src/components/` — Vue 3 SFCs (BlobLogo, SplashScreen, ImageGallery, RainEffect, SocialLinks, CursorFollower)
 - `src/stores/` — Vue reactive state (splash screen state)
 - `src/styles/` — Global CSS
+- `docs/` — Supplementary docs (e.g. accessibility)
 
 ### External Services
 
@@ -45,4 +46,4 @@ The site uses several layered visual effects: rain animation (CSS keyframes), cu
 
 ## CI/CD
 
-GitHub Actions workflow (`.github/workflows/deploy.yml`) runs `pnpm build` on push to main and deploys `dist/` to GitHub Pages.
+Cloudflare Pages builds and deploys from the repo (`pnpm build`, output `dist/`). GitHub Actions (`.github/workflows/ci.yml`) runs the same build on push/PR for verification. Security headers live in `public/_headers`.

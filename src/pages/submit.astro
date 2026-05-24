@@ -25,14 +25,13 @@ import NoRainLayout from '../layouts/NoRainLayout.astro';
         <!-- FormSubmit honeypot to prevent spam -->
         <input type="text" name="_honey" style="display: none" aria-hidden="true" tabindex="-1" />
 
-        <!-- Disable captcha -->
-        <input type="hidden" name="_captcha" value="false" />
+        <input type="hidden" name="_subject" value="New image request from mooshieblob.com" />
 
         <!-- Redirect after submission -->
         <input
           type="hidden"
           name="_next"
-          value="https://mooshieblob.com/submit"
+          value="https://www.mooshieblob.com/submit?submitted=1"
         />
 
         <div class="mb-4">

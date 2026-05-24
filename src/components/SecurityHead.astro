@@ -1,0 +1,24 @@
+---
+// Cloudflare Pages applies HTTP headers from public/_headers (copied to dist/).
+// Meta tags below are a fallback for local preview and any host without _headers support.
+const csp = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+  "form-action 'self' https://formsubmit.co",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' https: data:",
+  "font-src 'self'",
+  "connect-src 'self' https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev",
+  "upgrade-insecure-requests",
+].join("; ");
+---
+
+<meta http-equiv="Content-Security-Policy" content={csp} />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta
+  http-equiv="Permissions-Policy"
+  content="camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+/>

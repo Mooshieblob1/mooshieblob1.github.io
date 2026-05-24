@@ -3,7 +3,7 @@
       <a
         href="https://x.com/mooshieblob"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         class="mr-2"
         aria-label="Follow MooshieBlob on Twitter/X"
       >
@@ -14,7 +14,7 @@
       <a
         href="https://github.com/Mooshieblob1/"
         target="_blank"
-        rel="noopener"
+        rel="noopener noreferrer"
         class="mr-2"
         aria-label="Visit MooshieBlob's GitHub profile"
       >

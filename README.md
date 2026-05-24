@@ -1,6 +1,6 @@
 # mooshieblob.com
 
-A personal portfolio and image gallery site built with **Astro 5**, **Vue 3**, and **Tailwind CSS**. Deployed to GitHub Pages at [mooshieblob.com](https://mooshieblob.com).
+A personal portfolio and image gallery site built with **Astro 5**, **Vue 3**, and **Tailwind CSS**. Deployed to Cloudflare Pages at [mooshieblob.com](https://mooshieblob.com).
 
 ## Pages
 
@@ -33,6 +33,8 @@ A personal portfolio and image gallery site built with **Astro 5**, **Vue 3**, a
 
 ## Accessibility
 
+See [docs/accessibility.md](docs/accessibility.md) for details and testing notes.
+
 - Skip-to-main-content link
 - Visible focus indicators (yellow outline) on all interactive elements
 - Full keyboard navigation — Tab, Enter/Space, Arrow keys, Escape
@@ -47,7 +49,7 @@ A personal portfolio and image gallery site built with **Astro 5**, **Vue 3**, a
 |---|---|
 | **Cloudflare Workers** | Serves image data to the gallery at runtime |
 | **FormSubmit.co** | Handles form submissions from the Submit page |
-| **GitHub Pages** | Static hosting via GitHub Actions CI/CD |
+| **Cloudflare Pages** | Static hosting; security headers via `public/_headers` |
 
 ## Design Tokens
 
@@ -69,4 +71,4 @@ pnpm preview        # Preview the build locally
 
 ## Deployment
 
-Pushes to `main` trigger a GitHub Actions workflow that builds the site with pnpm and deploys `dist/` to GitHub Pages.
+Cloudflare Pages builds and deploys on push to `main`. GitHub Actions runs the same build in CI to verify changes before/at merge.

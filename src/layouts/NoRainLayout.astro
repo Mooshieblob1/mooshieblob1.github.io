@@ -1,6 +1,7 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
 import CursorFollower from '../components/CursorFollower.vue';
+import SecurityHead from '../components/SecurityHead.astro';
 import '../styles/style.css';
 
 interface Props {
@@ -17,6 +18,7 @@ const currentYear = new Date().getFullYear();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <SecurityHead />
     <meta name="description" content={description} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -71,16 +73,6 @@ const currentYear = new Date().getFullYear();
         <footer class="footer-container">
           <div class="footer-text">
             <span>&copy; 2024-{currentYear} Mooshieblob</span>
-            <a id="ipv6" href="https://iplocation.io/ipv6-compatibility-checker?url=referer">
-              <img
-                src="https://iplocation.io/images/ipv6-non-validated.svg"
-                alt="ipv6 ready"
-                title="ipv6 ready"
-                style="border: 0; padding: 0"
-                width="36"
-                height="18"
-              />
-            </a>
           </div>
         </footer>
       </div>
@@ -221,11 +213,6 @@ const currentYear = new Date().getFullYear();
         justify-content: center;
         align-items: center;
         color: rgb(174, 174, 174);
-      }
-
-      #ipv6 {
-        height: 18px;
-        margin-left: 10px;
       }
     </style>
   </body>
