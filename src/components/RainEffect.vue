@@ -177,11 +177,25 @@ function buildLogoMask() {
 }
 
 // --- Element rect tracking ---
+let girlEl: HTMLElement | null = null;
+let logoEl: HTMLElement | null = null;
+let heroEl: HTMLElement | null = null;
+
 function updateRects() {
-  const logo = document.getElementById('main-logo');
-  logoRect = logo && logo.offsetParent !== null ? logo.getBoundingClientRect() : null;
-  const girl = document.getElementById('bg_girl');
-  girlRect = girl ? girl.getBoundingClientRect() : null;
+  logoEl = document.getElementById('main-logo');
+  logoRect = logoEl && logoEl.offsetParent !== null ? logoEl.getBoundingClientRect() : null;
+  girlEl = document.getElementById('bg_girl');
+  girlRect = girlEl ? girlEl.getBoundingClientRect() : null;
+  heroEl = document.querySelector('.social-links');
+}
+
+// Reads an element's inline opacity (cheap, no reflow); defaults to fully
+// visible when unset. Used to skip rain collisions once the girl/logo fade out
+// as the MooshieUI card scrolls in.
+function inlineOpacity(el: HTMLElement | null): number {
+  if (!el) return 1;
+  const o = el.style.opacity;
+  return o === '' ? 1 : parseFloat(o) || 0;
 }
 
 // --- Canvas sizing ---
@@ -213,6 +227,12 @@ function frame(now: number) {
 
   ctxFront.clearRect(0, 0, width, height);
   ctxBack.clearRect(0, 0, width, height);
+
+  // Skip collisions on elements that have faded out (e.g. while the MooshieUI
+  // card scrolls into view). The logo fades via its `.social-links` container.
+  const girlVisible = !!girlRect && inlineOpacity(girlEl) > 0.05;
+  const logoVisible =
+    !!logoRect && inlineOpacity(heroEl) > 0.05 && inlineOpacity(logoEl) > 0.05;
 
   // Smooth cursor tracking (dt-scaled lerp)
   if (mouseActive) {
@@ -263,7 +283,7 @@ function frame(now: number) {
       }
 
       // Raingirl collision (pixel-accurate via alpha mask)
-      if (girlRect) {
+      if (girlVisible && girlRect) {
         const tip = d.y + d.length;
         if (
           tip >= girlRect.top &&
@@ -280,7 +300,7 @@ function frame(now: number) {
       }
 
       // Logo collision (pixel-accurate via alpha mask)
-      if (logoRect) {
+      if (logoVisible && logoRect) {
         const tip = d.y + d.length;
         if (
           tip >= logoRect.top &&

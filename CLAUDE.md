@@ -16,6 +16,8 @@ Never add Cursor, Copilot, or other AI-tool branding to PRs, merge messages, com
 - **Format check:** `pnpm prettier --check .`
 - **Package manager:** pnpm (v9), Node 20+ (.nvmrc says 20, CI uses 22)
 
+Note: `package.json` defines only `dev`, `build`, and `preview` scripts. Type checking and formatting have no dedicated npm scripts — run them via `npx`/`pnpm exec` as shown above.
+
 ## Architecture
 
 **Astro 5 static site** with **Vue 3** components for interactivity and **Tailwind CSS** for styling. Deployed to Cloudflare Pages at mooshieblob.com.
@@ -28,7 +30,7 @@ Astro pages and layouts are server-rendered at build time. Vue components use `c
 
 - `src/pages/` — File-based routing (index, images, about, submit)
 - `src/layouts/` — Two layouts: `BaseLayout.astro` (with rain effect) and `NoRainLayout.astro`
-- `src/components/` — Vue 3 SFCs (BlobLogo, SplashScreen, ImageGallery, RainEffect, SocialLinks, CursorFollower)
+- `src/components/` — Vue 3 SFCs (BlobLogo, SplashScreen, ImageGallery, RainEffect, SocialLinks, CursorFollower) plus `SecurityHead.astro` (Astro component injecting security-related `<head>` tags; pairs with `public/_headers`)
 - `src/stores/` — Vue reactive state (splash screen state)
 - `src/styles/` — Global CSS
 - `docs/` — Supplementary docs (e.g. accessibility)

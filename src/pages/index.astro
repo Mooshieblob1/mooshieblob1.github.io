@@ -16,7 +16,22 @@ import SocialLinks from '../components/SocialLinks.vue';
         transition:persist
       />
       <SocialLinks client:load />
+      <a
+        id="mooshieui-link"
+        class="mooshieui-link reveal-on-splash"
+        href="https://mooshieui.mooshieblob.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open MooshieUI"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2.5l1.6 4.1 4.1 1.6-4.1 1.6L12 13.9l-1.6-4.1L6.3 8.2l4.1-1.6z" />
+          <path d="M18 13.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+        </svg>
+        <span>MooshieUI</span>
+      </a>
     </div>
+
     <div class="back-row-toggle splat-toggle">
       <img
         id="bg_girl"
@@ -24,34 +39,352 @@ import SocialLinks from '../components/SocialLinks.vue';
         alt="Background character in yellow raincoat"
       />
     </div>
+
+    <button
+      id="scroll-cue"
+      class="scroll-cue reveal-on-splash"
+      type="button"
+      aria-label="Scroll down to learn about MooshieUI"
+    >
+      <span class="scroll-cue__text">Discover MooshieUI</span>
+      <svg
+        class="scroll-cue__chevron"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 9l6 6 6-6" />
+      </svg>
+    </button>
+
+    <div class="hero-spacer" aria-hidden="true"></div>
+
+    <section id="mooshieui-card" class="mooshieui-card" aria-labelledby="mooshieui-card-title">
+      <div class="mooshieui-card__inner">
+        <div class="mooshieui-card__icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12 2.5l1.6 4.1 4.1 1.6-4.1 1.6L12 13.9l-1.6-4.1L6.3 8.2l4.1-1.6z" />
+            <path d="M18 13.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" />
+          </svg>
+        </div>
+        <h2 id="mooshieui-card-title">MooshieUI</h2>
+        <p>
+          A beginner-friendly front-end for ComfyUI that hides the node-graph
+          complexity behind a clean, guided workflow — so you can create AI
+          images without wiring graphs by hand. From a first prompt to advanced
+          inpainting and upscaling, it stays approachable while keeping the power
+          underneath.
+        </p>
+        <ul class="mooshieui-card__features">
+          <li>Text-to-image</li>
+          <li>Image-to-image</li>
+          <li>Inpainting</li>
+          <li>Smart model detection</li>
+          <li>Live previews</li>
+          <li>11 languages</li>
+        </ul>
+        <a
+          class="mooshieui-card__cta"
+          href="https://mooshieui.mooshieblob.com"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open MooshieUI →
+        </a>
+      </div>
+    </section>
   </div>
 </BaseLayout>
 
 <script>
-  // Handle logo visibility for splash screen
-  function initLogo() {
+  function initIndex() {
     const logo = document.getElementById('main-logo');
-    if (!logo) return;
-    
-    if (sessionStorage.getItem('splash-shown')) {
-      logo.style.opacity = '1';
-    } else {
-      logo.style.opacity = '0';
-      document.addEventListener('splash-done', () => {
+    const link = document.getElementById('mooshieui-link');
+    const cue = document.getElementById('scroll-cue');
+    const card = document.getElementById('mooshieui-card');
+    const hero = document.querySelector('.social-links') as HTMLElement | null;
+    const girl = document.getElementById('bg_girl');
+    const html = document.documentElement;
+
+    // Nothing to gate on pages without the MooshieUI section.
+    if (!card) return;
+
+    // Drive the scroll-linked cross-fade between the hero and the card.
+    const applyScroll = (y: number) => {
+      const vh = window.innerHeight || 1;
+      const p = Math.min(Math.max(y / vh, 0), 1);
+      if (hero) {
+        hero.style.opacity = String(1 - p);
+        hero.style.pointerEvents = p > 0.6 ? 'none' : '';
+      }
+      if (girl) girl.style.opacity = String(1 - p);
+      if (cue) cue.style.opacity = String(Math.max(0, 1 - p * 3));
+      card.style.opacity = String(p);
+      card.style.transform = `translateY(${(1 - p) * 40}px)`;
+      card.style.pointerEvents = p > 0.2 ? 'auto' : 'none';
+    };
+
+    const onWindowScroll = () => applyScroll(window.scrollY);
+
+    const bindScroll = () => {
+      const prev = (window as any).__mooshieuiScroll;
+      if (prev) window.removeEventListener('scroll', prev);
+      (window as any).__mooshieuiScroll = onWindowScroll;
+      window.addEventListener('scroll', onWindowScroll, { passive: true });
+
+      // Prefer Lenis' own (eased) scroll value when smooth scrolling is active.
+      let tries = 0;
+      const attachLenis = () => {
+        const lenis = (window as any).__lenis;
+        if (lenis?.on) {
+          const prevLenis = (window as any).__mooshieuiLenisScroll;
+          if (prevLenis) lenis.off?.('scroll', prevLenis);
+          const handler = (e: any) =>
+            applyScroll(e?.animatedScroll ?? e?.scroll ?? window.scrollY);
+          (window as any).__mooshieuiLenisScroll = handler;
+          lenis.on('scroll', handler);
+        } else if (tries++ < 60) {
+          requestAnimationFrame(attachLenis);
+        }
+      };
+      attachLenis();
+
+      applyScroll(window.scrollY);
+    };
+
+    // Reveal everything that is gated behind the splash animation.
+    const reveal = () => {
+      if (logo) {
         logo.style.transition = 'opacity 0.3s ease';
         logo.style.opacity = '1';
-      }, { once: true });
+      }
+      link?.classList.add('is-revealed');
+      cue?.classList.add('is-revealed');
+      html.style.overflow = '';
+      (window as any).__lenis?.start?.();
+      bindScroll();
+    };
+
+    if (sessionStorage.getItem('splash-shown')) {
+      reveal();
+    } else {
+      if (logo) logo.style.opacity = '0';
+      // Lock scrolling so the MooshieUI content stays out of reach until the
+      // intro animation finishes.
+      html.style.overflow = 'hidden';
+      (window as any).__lenis?.stop?.();
+      document.addEventListener('splash-done', reveal, { once: true });
     }
+
+    cue?.addEventListener('click', () => {
+      const lenis = (window as any).__lenis;
+      if (lenis?.scrollTo) lenis.scrollTo(card);
+      else card.scrollIntoView({ behavior: 'smooth' });
+    });
   }
-  
-  initLogo();
-  document.addEventListener('astro:after-swap', initLogo);
+
+  initIndex();
+  document.addEventListener('astro:after-swap', initIndex);
 </script>
 
 <style>
   .index-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
+  }
+
+  /* In-flow spacer that occupies the first screen so there is real scroll
+     height below the fixed hero for the card to scroll into. */
+  .hero-spacer {
+    height: 100vh;
+    flex: none;
+  }
+
+  /* MooshieUI link in the centred hero box, below the social icons */
+  .mooshieui-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255, 204, 0, 0.5);
+    border-radius: 9999px;
+    color: #ffcc00;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    background: rgba(255, 204, 0, 0.06);
+    transition:
+      background 0.3s ease,
+      box-shadow 0.3s ease,
+      transform 0.3s ease;
+  }
+
+  .mooshieui-link:hover {
+    background: rgba(255, 204, 0, 0.14);
+    box-shadow: 0 0 18px rgba(255, 204, 0, 0.35);
+    transform: translateY(-1px);
+  }
+
+  .mooshieui-link svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Hidden until the splash intro completes */
+  .reveal-on-splash {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .reveal-on-splash.is-revealed {
+    opacity: 1;
+  }
+
+  /* Scroll cue */
+  .scroll-cue {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    color: #ffcc00;
+    cursor: pointer;
+    z-index: 20;
+  }
+
+  .scroll-cue__text {
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  .scroll-cue__chevron {
+    width: 26px;
+    height: 26px;
+    animation: cue-bounce 1.8s ease-in-out infinite;
+  }
+
+  @keyframes cue-bounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(6px);
+    }
+  }
+
+  /* MooshieUI card, one screen below the hero */
+  .mooshieui-card {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    opacity: 0;
+    position: relative;
+    z-index: 15;
+    will-change: opacity, transform;
+  }
+
+  .mooshieui-card__inner {
+    max-width: 640px;
+    width: 100%;
+    background: rgba(2, 6, 26, 0.72);
+    border: 1px solid rgba(255, 204, 0, 0.25);
+    border-radius: 18px;
+    padding: 36px 32px;
+    text-align: center;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .mooshieui-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 18px;
+    border-radius: 16px;
+    color: #02061a;
+    background: linear-gradient(135deg, #ffcc00, #fbc21b);
+    box-shadow: 0 0 24px rgba(255, 204, 0, 0.4);
+  }
+
+  .mooshieui-card__icon svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mooshieui-card h2 {
+    font-size: 1.8rem;
+    margin-bottom: 12px;
+    color: #ffcc00;
+  }
+
+  .mooshieui-card p {
+    color: #d7dae6;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  .mooshieui-card__features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 26px;
+    list-style: none;
+  }
+
+  .mooshieui-card__features li {
+    font-size: 0.8rem;
+    color: #ffcc00;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    border-radius: 9999px;
+    padding: 4px 12px;
+    background: rgba(255, 204, 0, 0.05);
+  }
+
+  .mooshieui-card__cta {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 9999px;
+    background: #ffcc00;
+    color: #02061a;
+    font-weight: 700;
+    text-decoration: none;
+    transition:
+      box-shadow 0.3s ease,
+      transform 0.3s ease;
+  }
+
+  .mooshieui-card__cta:hover {
+    box-shadow: 0 0 24px rgba(255, 204, 0, 0.5);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 600px) {
+    .mooshieui-card__inner {
+      padding: 28px 20px;
+    }
+
+    .mooshieui-card h2 {
+      font-size: 1.5rem;
+    }
   }
 </style>
