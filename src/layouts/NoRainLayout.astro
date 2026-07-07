@@ -1,6 +1,7 @@
 ---
 import { ViewTransitions } from 'astro:transitions';
 import CursorFollower from '../components/CursorFollower.vue';
+import GravityGrid from '../components/GravityGrid.vue';
 import SecurityHead from '../components/SecurityHead.astro';
 import '../styles/style.css';
 
@@ -58,6 +59,9 @@ const currentYear = new Date().getFullYear();
         </div>
       </div>
     </nav>
+
+    <!-- Gravity Grid background -->
+    <GravityGrid client:load />
 
     <!-- Cursor Follower -->
     <CursorFollower client:load />

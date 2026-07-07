@@ -4,6 +4,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { followerPos } from '../stores/cursor';
 
 const el = ref<HTMLElement | null>(null);
 
@@ -39,6 +40,11 @@ const animate = (now: number) => {
 
   if (el.value) {
     el.value.style.transform = `translate(${curX - 20}px, ${curY - 20}px)`;
+  }
+
+  if (initialized) {
+    followerPos.x = curX;
+    followerPos.y = curY;
   }
 
   animationFrameId = requestAnimationFrame(animate);
