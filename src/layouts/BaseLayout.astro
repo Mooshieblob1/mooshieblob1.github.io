@@ -29,8 +29,7 @@ const links = [{ href: '/', label: 'Profile' }, { href: '/images', label: 'Image
     <a class="skip-to-main" href="#main-content">Skip to main content</a>
     <header class="site-header shell">
       <a class="wordmark" href="/" aria-label="Blob home">
-        <img src="/assets/images/bloblogo.webp" alt="" width="48" height="32" />
-        <span>blob<span class="yellow">.</span></span>
+        <img src="/assets/images/bloblogo.webp" alt="Blob" width="979" height="729" />
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         {links.map(link => <a href={link.href} aria-current={path === link.href ? 'page' : undefined}>{link.label}</a>)}
@@ -39,7 +38,7 @@ const links = [{ href: '/', label: 'Profile' }, { href: '/images', label: 'Image
     </header>
     <main id="main-content"><slot /></main>
     <footer class="site-footer shell">
-      <a href="/" class="footer-brand">blob<span class="yellow">.</span><span class="footer-note"> A little corner of the internet.</span></a>
+      <a href="/" class="footer-brand"><img src="/assets/images/bloblogo.webp" alt="Blob home" width="979" height="729" /><span class="footer-note">A little corner of the internet.</span></a>
       <span class="copyright">© {new Date().getFullYear()} Mooshieblob</span>
       <a href="https://github.com/Mooshieblob1/" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
     </footer>

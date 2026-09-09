@@ -9,7 +9,9 @@ Blob’s profile, AI image gallery, about page, and image request form. Built wi
 - `/about` — Blob’s bio and interests.
 - `/submit` — Image ideas sent through the existing FormSubmit.co form.
 
-The site uses normal page links, short cross-document transitions where supported, and reduced-motion preferences. The interface is available immediately, without a splash screen or scroll lock.
+The profile centres the original Blob logo and ratgirl in a layered rain scene. Drops splash against the artwork’s alpha silhouettes, with swept collision checks for thin edges and scene-relative coordinates that remain aligned while scrolling or resizing. Desktop pointers can deflect nearby rain. A pause control and reduced-motion support are included, and animation stops while the scene or tab is hidden.
+
+The site uses normal page links and short cross-document transitions where supported. The interface is available immediately, without a splash screen or scroll lock.
 
 ## Gallery repair
 

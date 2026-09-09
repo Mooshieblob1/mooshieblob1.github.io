@@ -1,478 +1,229 @@
 <template>
-  <!-- Behind girl & logo -->
-  <canvas ref="backCanvasRef" class="rain-canvas rain-back"></canvas>
-  <!-- In front of everything -->
-  <canvas ref="frontCanvasRef" class="rain-canvas rain-front"></canvas>
+  <canvas ref="backCanvas" class="rain-canvas rain-back" aria-hidden="true"></canvas>
+  <canvas ref="frontCanvas" class="rain-canvas rain-front" aria-hidden="true"></canvas>
+  <button type="button" class="rain-toggle" @click="toggleRain">
+    <svg v-if="!paused" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3v10M11 3v10" /></svg>
+    <svg v-else viewBox="0 0 16 16" aria-hidden="true"><path d="m5 3 8 5-8 5Z" /></svg>
+    {{ paused ? 'Resume rain' : 'Pause rain' }}
+  </button>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import { firstSurfaceHit } from '../lib/rain-collision.mjs';
 
-const backCanvasRef = ref<HTMLCanvasElement>();
-const frontCanvasRef = ref<HTMLCanvasElement>();
+const props = withDefaults(defineProps<{ sceneId?: string }>(), { sceneId: 'rain-scene' });
+const backCanvas = ref<HTMLCanvasElement | null>(null);
+const frontCanvas = ref<HTMLCanvasElement | null>(null);
+const paused = ref(false);
+interface Drop { x: number; y: number; speed: number; length: number; back: boolean }
+interface Particle { x: number; y: number; vx: number; vy: number; life: number; decay: number; size: number }
+interface Target { element: HTMLImageElement; mask: Uint8Array; maskWidth: number; maskHeight: number; left: number; top: number; width: number; height: number }
+let scene: HTMLElement | null = null;
+let back: CanvasRenderingContext2D | null = null;
+let front: CanvasRenderingContext2D | null = null;
+let backStrip: HTMLCanvasElement;
+let frontStrip: HTMLCanvasElement;
+let width = 0, height = 0, frameId = 0, lastTime = 0;
+let alive = false, inView = true;
+let drops: Drop[] = [], particles: Particle[] = [], targets: Target[] = [];
+let resizeObserver: ResizeObserver | null = null;
+let visibilityObserver: IntersectionObserver | null = null;
+let reducedMotion: MediaQueryList | null = null;
+let pointerQuery: MediaQueryList | null = null;
+let pointerActive = false;
+let mouseX = -200, mouseY = -200, cursorX = -200, cursorY = -200;
+const imageListeners: Array<{ element: HTMLImageElement; listener: () => void }> = [];
+const FRAME_MS = 1000 / 60;
+const CURSOR_RADIUS = 18;
 
-// --- Types ---
-interface Drop {
-  x: number;
-  y: number;
-  speed: number;
-  length: number;
-  back: boolean; // true = behind elements
+function makeStrip(alpha: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1; canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const gradient = ctx.createLinearGradient(0, 0, 0, 64);
+  gradient.addColorStop(0, 'rgba(176,207,244,0)');
+  gradient.addColorStop(1, `rgba(196,220,255,${alpha})`);
+  ctx.fillStyle = gradient; ctx.fillRect(0, 0, 1, 64);
+  return canvas;
 }
-
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  life: number;
-  decay: number;
-  size: number;
+function makeDrop(backLayer: boolean, scatter = false): Drop {
+  return { x: Math.random() * width, y: scatter ? -Math.random() * height : -20 - Math.random() * 100,
+    speed: backLayer ? 5 + Math.random() * 4 : 8 + Math.random() * 6,
+    length: backLayer ? 10 + Math.random() * 12 : 15 + Math.random() * 18, back: backLayer };
 }
-
-// --- Config ---
-const FRONT_COUNT = 90;
-const BACK_COUNT = 40;
-const DROP_COUNT = FRONT_COUNT + BACK_COUNT;
-const MAX_PARTICLES = 300;
-const CIRCLE_RADIUS = 20; // matches CursorFollower's 40px / 2
-const DEFLECT_RADIUS = 60; // outer influence zone beyond the circle edge
-const SPLASH_TOLERANCE = 3; // how close to the edge before splashing
-const BACK_OPACITY = 0.35; // dimmer for depth
-
-// --- State ---
-let drops: Drop[] = [];
-let particles: Particle[] = [];
-let width = 0;
-let height = 0;
-let ctxFront: CanvasRenderingContext2D | null = null;
-let ctxBack: CanvasRenderingContext2D | null = null;
-let frameId = 0;
-let lastTime = 0;
-const TARGET_FPS = 60;
-const TARGET_DT = 1000 / TARGET_FPS;
-
-// Cursor tracking (same 0.15 easing as CursorFollower)
-let mouseX = -200;
-let mouseY = -200;
-let cursorX = -200;
-let cursorY = -200;
-let mouseActive = false;
-
-// Collision targets
-let logoRect: DOMRect | null = null;
-let girlRect: DOMRect | null = null;
-let girlMask: Uint8Array | null = null;
-let girlMaskW = 0;
-let girlMaskH = 0;
-let logoMask: Uint8Array | null = null;
-let logoMaskW = 0;
-let logoMaskH = 0;
-
-// Pre-rendered gradient strips for efficient raindrop drawing
-let gradientFront: HTMLCanvasElement;
-let gradientBack: HTMLCanvasElement;
-
-function makeGradientStrip(alpha: number): HTMLCanvasElement {
-  const c = document.createElement('canvas');
-  c.width = 1;
-  c.height = 64;
-  const g = c.getContext('2d')!;
-  const grad = g.createLinearGradient(0, 0, 0, 64);
-  grad.addColorStop(0, 'rgba(255,255,255,0)');
-  grad.addColorStop(1, `rgba(255,255,255,${alpha})`);
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 1, 64);
-  return c;
+function splash(x: number, y: number, count = 3) {
+  for (let i = 0; i < count && particles.length < 240; i++) particles.push({
+    x, y, vx: (Math.random() - .5) * 4.5, vy: -1.5 - Math.random() * 2.5,
+    life: 1, decay: 1 / (18 + Math.random() * 16), size: .8 + Math.random() * .9,
+  });
 }
-
-// --- Factory helpers ---
-function makeDrop(scatter = false, back?: boolean): Drop {
-  const isBack = back ?? false;
-  return {
-    x: Math.random() * width,
-    y: scatter ? -(Math.random() * height) : -(Math.random() * 20),
-    speed: isBack ? 4.6 + Math.random() * 6.9 : 6.9 + Math.random() * 11.5,
-    length: isBack ? 8 + Math.random() * 12 : 10 + Math.random() * 20,
-    back: isBack,
-  };
-}
-
-function addSplash(x: number, y: number, dirX: number, dirY: number, count: number) {
-  for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
-    const spread = (Math.random() - 0.5) * 2;
-    const spd = 1 + Math.random() * 3;
-    particles.push({
-      x,
-      y,
-      vx: dirX * spd + spread,
-      vy: dirY * spd - Math.random() * 2,
-      life: 1,
-      decay: 1 / (15 + Math.random() * 20),
-      size: 1 + Math.random(),
-    });
+function measureTargets() {
+  if (!scene) return;
+  const bounds = scene.getBoundingClientRect();
+  for (const target of targets) {
+    const rect = target.element.getBoundingClientRect();
+    target.left = rect.left - bounds.left;
+    target.top = rect.top - bounds.top;
+    target.width = rect.width; target.height = rect.height;
   }
 }
-
-function splashOnSurface(x: number, y: number, count: number) {
-  addSplash(x, y, 0, -1, count);
-}
-
-// --- Alpha-mask collision helpers ---
-function isMaskSolid(
-  mask: Uint8Array, mw: number, mh: number,
-  rect: DOMRect, sx: number, sy: number,
-): boolean {
-  const ix = Math.floor(((sx - rect.left) / rect.width) * mw);
-  const iy = Math.floor(((sy - rect.top) / rect.height) * mh);
-  if (ix < 0 || ix >= mw || iy < 0 || iy >= mh) return false;
-  return mask[iy * mw + ix] > 128;
-}
-
-function isGirlSolid(sx: number, sy: number): boolean {
-  if (!girlMask || !girlRect) return false;
-  return isMaskSolid(girlMask, girlMaskW, girlMaskH, girlRect, sx, sy);
-}
-
-function isLogoSolid(sx: number, sy: number): boolean {
-  if (!logoMask || !logoRect) return false;
-  return isMaskSolid(logoMask, logoMaskW, logoMaskH, logoRect, sx, sy);
-}
-
-function buildAlphaMask(el: HTMLImageElement, scale: number) {
-  const c = document.createElement('canvas');
-  c.width = Math.ceil(el.naturalWidth * scale);
-  c.height = Math.ceil(el.naturalHeight * scale);
-  const cx = c.getContext('2d', { willReadFrequently: true });
-  if (!cx) return null;
-  cx.drawImage(el, 0, 0, c.width, c.height);
-  const data = cx.getImageData(0, 0, c.width, c.height);
-  const mask = new Uint8Array(c.width * c.height);
-  for (let i = 0; i < mask.length; i++) {
-    mask[i] = data.data[i * 4 + 3];
-  }
-  return { mask, w: c.width, h: c.height };
-}
-
-function buildGirlMask() {
-  const el = document.getElementById('bg_girl') as HTMLImageElement | null;
-  if (!el || !el.naturalWidth) return;
+function buildMask(element: HTMLImageElement) {
+  if (!alive || !element.naturalWidth || targets.some(target => target.element === element)) return;
   try {
-    const result = buildAlphaMask(el, 0.25);
-    if (result) { girlMask = result.mask; girlMaskW = result.w; girlMaskH = result.h; }
-  } catch {
-    girlMask = null;
-  }
+    const scale = Math.min(1, 512 / Math.max(element.naturalWidth, element.naturalHeight));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.ceil(element.naturalWidth * scale);
+    canvas.height = Math.ceil(element.naturalHeight * scale);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    ctx.drawImage(element, 0, 0, canvas.width, canvas.height);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    const mask = new Uint8Array(canvas.width * canvas.height);
+    for (let i = 0; i < mask.length; i++) mask[i] = pixels[i * 4 + 3];
+    targets.push({ element, mask, maskWidth: canvas.width, maskHeight: canvas.height, left: 0, top: 0, width: 0, height: 0 });
+    measureTargets();
+  } catch { /* The artwork remains visible if a browser cannot read its pixels. */ }
 }
-
-function buildLogoMask() {
-  const el = document.getElementById('main-logo') as HTMLImageElement | null;
-  if (!el || !el.naturalWidth) return;
-  try {
-    const result = buildAlphaMask(el, 0.3);
-    if (result) { logoMask = result.mask; logoMaskW = result.w; logoMaskH = result.h; }
-  } catch {
-    logoMask = null;
-  }
-}
-
-// --- Element rect tracking ---
-let girlEl: HTMLElement | null = null;
-let logoEl: HTMLElement | null = null;
-let heroEl: HTMLElement | null = null;
-
-function updateRects() {
-  logoEl = document.getElementById('main-logo');
-  logoRect = logoEl && logoEl.offsetParent !== null ? logoEl.getBoundingClientRect() : null;
-  girlEl = document.getElementById('bg_girl');
-  girlRect = girlEl ? girlEl.getBoundingClientRect() : null;
-  heroEl = document.querySelector('.social-links');
-}
-
-// Reads an element's inline opacity (cheap, no reflow); defaults to fully
-// visible when unset. Used to skip rain collisions once the girl/logo fade out
-// as the MooshieUI card scrolls in.
-function inlineOpacity(el: HTMLElement | null): number {
-  if (!el) return 1;
-  const o = el.style.opacity;
-  return o === '' ? 1 : parseFloat(o) || 0;
-}
-
-// --- Canvas sizing ---
-function sizeCanvas(canvas: HTMLCanvasElement, c: CanvasRenderingContext2D) {
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
-  c.setTransform(dpr, 0, 0, dpr, 0, 0);
-}
-
 function resize() {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  if (backCanvasRef.value && ctxBack) sizeCanvas(backCanvasRef.value, ctxBack);
-  if (frontCanvasRef.value && ctxFront) sizeCanvas(frontCanvasRef.value, ctxFront);
-  updateRects();
+  if (!scene || !front || !back) return;
+  const rect = scene.getBoundingClientRect();
+  const nextWidth = rect.width, nextHeight = rect.height;
+  if (nextWidth !== width || nextHeight !== height) {
+    width = nextWidth; height = nextHeight; pointerActive = false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (const [canvas, ctx] of [[backCanvas.value, back], [frontCanvas.value, front]] as const) {
+      if (!canvas) continue;
+      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    // Density scales with the composition, rather than the physical screen resolution.
+    const frontCount = Math.max(28, Math.min(110, Math.round(width / 12)));
+    drops = Array.from({ length: frontCount }, () => makeDrop(false, true))
+      .concat(Array.from({ length: Math.round(frontCount * .45) }, () => makeDrop(true, true)));
+    particles = [];
+  }
+  measureTargets();
 }
-
-// --- Main animation loop ---
 function frame(now: number) {
-  if (!ctxFront || !ctxBack) return;
-
-  // Delta-time: normalize so movement is consistent regardless of FPS
-  if (!lastTime) lastTime = now;
-  const rawDt = now - lastTime;
+  if (!front || !back || paused.value || !alive || !inView || document.hidden) { frameId = 0; return; }
+  const dt = Math.min(lastTime ? (now - lastTime) / FRAME_MS : 1, 2.5);
   lastTime = now;
-  // Clamp dt to avoid huge jumps after tab-away (cap at ~4 frames)
-  const dt = Math.min(rawDt, TARGET_DT * 4) / TARGET_DT;
-
-  ctxFront.clearRect(0, 0, width, height);
-  ctxBack.clearRect(0, 0, width, height);
-
-  // Skip collisions on elements that have faded out (e.g. while the MooshieUI
-  // card scrolls into view). The logo fades via its `.social-links` container.
-  const girlVisible = !!girlRect && inlineOpacity(girlEl) > 0.05;
-  const logoVisible =
-    !!logoRect && inlineOpacity(heroEl) > 0.05 && inlineOpacity(logoEl) > 0.05;
-
-  // Smooth cursor tracking (dt-scaled lerp)
-  if (mouseActive) {
-    const lerpFactor = 1 - Math.pow(1 - 0.15, dt);
-    cursorX += (mouseX - cursorX) * lerpFactor;
-    cursorY += (mouseY - cursorY) * lerpFactor;
+  front.clearRect(0, 0, width, height); back.clearRect(0, 0, width, height);
+  if (pointerActive) {
+    const easing = 1 - Math.pow(.85, dt);
+    cursorX += (mouseX - cursorX) * easing; cursorY += (mouseY - cursorY) * easing;
   }
-
-  // --- Update drops ---
   for (let i = 0; i < drops.length; i++) {
-    const d = drops[i];
-    let deflected = false;
-
-    // Front drops interact with cursor, girl, and logo
-    if (!d.back) {
-      // Cursor circle deflection — rain interacts with the yellow ring edge
-      if (mouseActive) {
-        const dx = d.x - cursorX;
-        const dy = d.y + d.length * 0.5 - cursorY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const outerZone = CIRCLE_RADIUS + DEFLECT_RADIUS;
-
-        if (dist < outerZone && dist > 0) {
-          // Distance from the circle edge (negative = inside circle)
-          const edgeDist = dist - CIRCLE_RADIUS;
-
-          if (edgeDist <= SPLASH_TOLERANCE) {
-            // Hit the circle edge — splash outward from ring surface
-            const nx = dx / dist;
-            const ny = dy / dist;
-            const splashX = cursorX + nx * CIRCLE_RADIUS;
-            const splashY = cursorY + ny * CIRCLE_RADIUS;
-            addSplash(splashX, splashY, nx, ny, 3);
-            drops[i] = makeDrop(false, false);
-            continue;
-          }
-
-          // Approaching the ring — deflect away from the circle edge
-          const strength = Math.pow(1 - edgeDist / DEFLECT_RADIUS, 2);
-          d.x += (dx / dist) * strength * 5 * dt;
-          d.y += d.speed * (1 - strength * 0.6) * dt;
-          deflected = true;
-        }
+    const drop = drops[i];
+    const fromX = drop.x, fromTip = drop.y + drop.length;
+    let speed = drop.speed;
+    if (!drop.back && pointerActive) {
+      const dx = drop.x - cursorX, dy = fromTip - cursorY;
+      const distance = Math.hypot(dx, dy);
+      if (distance < CURSOR_RADIUS + 3) { splash(drop.x, fromTip, 2); drops[i] = makeDrop(false); continue; }
+      if (distance < CURSOR_RADIUS + 50 && distance > 0) {
+        const strength = Math.pow(1 - (distance - CURSOR_RADIUS) / 50, 2);
+        drop.x += dx / distance * strength * 4 * dt;
+        speed *= 1 - strength * .5;
       }
-
-      if (!deflected) {
-        d.y += d.speed * dt;
-      }
-
-      // Raingirl collision (pixel-accurate via alpha mask)
-      if (girlVisible && girlRect) {
-        const tip = d.y + d.length;
-        if (
-          tip >= girlRect.top &&
-          tip <= girlRect.bottom &&
-          d.x >= girlRect.left &&
-          d.x <= girlRect.right
-        ) {
-          if (girlMask ? isGirlSolid(d.x, tip) : false) {
-            splashOnSurface(d.x, tip, 2);
-            drops[i] = makeDrop(false, false);
-            continue;
-          }
-        }
-      }
-
-      // Logo collision (pixel-accurate via alpha mask)
-      if (logoVisible && logoRect) {
-        const tip = d.y + d.length;
-        if (
-          tip >= logoRect.top &&
-          tip <= logoRect.bottom &&
-          d.x >= logoRect.left &&
-          d.x <= logoRect.right
-        ) {
-          if (logoMask ? isLogoSolid(d.x, tip) : false) {
-            splashOnSurface(d.x, tip, 3);
-            drops[i] = makeDrop(false, false);
-            continue;
-          }
-        }
-      }
-    } else {
-      // Back drops just fall straight — no collisions
-      d.y += d.speed * dt;
     }
-
-    // Off-screen recycling
-    if (d.y > height) {
-      drops[i] = makeDrop(false, d.back);
+    drop.y += speed * dt;
+    if (!drop.back) {
+      const hit = firstSurfaceHit(targets, fromX, fromTip, drop.x, drop.y + drop.length);
+      if (hit) { splash(hit.x, hit.y); drops[i] = makeDrop(false); continue; }
+      if (drop.y + drop.length >= height - 14) {
+        if (Math.random() < .45) splash(drop.x, height - 14, 2);
+        drops[i] = makeDrop(false); continue;
+      }
     }
+    if (drop.y > height || drop.x < 0 || drop.x > width) { drops[i] = makeDrop(drop.back); continue; }
+    (drop.back ? back : front).drawImage(drop.back ? backStrip : frontStrip, 0, 0, 1, 64, Math.round(drop.x), drop.y, 1, drop.length);
   }
-
-  // --- Update particles (always drawn on front layer) ---
   for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 0.15 * dt;
-    p.life -= p.decay * dt;
-    if (p.life <= 0) {
-      particles[i] = particles[particles.length - 1];
-      particles.pop();
-    }
+    const particle = particles[i];
+    particle.x += particle.vx * dt; particle.y += particle.vy * dt;
+    particle.vy += .15 * dt; particle.life -= particle.decay * dt;
+    if (particle.life <= 0) { particles.splice(i, 1); continue; }
+    front.globalAlpha = particle.life * .75;
+    front.fillStyle = '#c4dcff'; front.beginPath();
+    front.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2); front.fill();
   }
-
-  // --- Draw back-layer drops ---
-  for (const d of drops) {
-    if (!d.back) continue;
-    ctxBack.drawImage(gradientBack, 0, 0, 1, 64, Math.round(d.x), d.y, 1, d.length);
+  front.globalAlpha = 1;
+  if (pointerActive) {
+    front.strokeStyle = '#ffd23e66'; front.lineWidth = 1;
+    front.beginPath(); front.arc(cursorX, cursorY, CURSOR_RADIUS, 0, Math.PI * 2); front.stroke();
   }
-
-  // --- Draw front-layer drops ---
-  for (const d of drops) {
-    if (d.back) continue;
-    ctxFront.drawImage(gradientFront, 0, 0, 1, 64, Math.round(d.x), d.y, 1, d.length);
-  }
-
-  // --- Draw splash particles (front layer) ---
-  for (const p of particles) {
-    ctxFront.globalAlpha = Math.max(0, p.life) * 0.8;
-    ctxFront.fillStyle = 'rgba(200,220,255,1)';
-    ctxFront.beginPath();
-    ctxFront.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctxFront.fill();
-  }
-  ctxFront.globalAlpha = 1;
-
   frameId = requestAnimationFrame(frame);
 }
-
-// Reset lastTime when visibility changes to avoid dt spike on tab-back
-function onVisibilityChange() {
-  if (!document.hidden) lastTime = 0;
+function syncAnimation() {
+  cancelAnimationFrame(frameId); frameId = 0; lastTime = 0;
+  if (alive && !paused.value && inView && !document.hidden) frameId = requestAnimationFrame(frame);
+  if (paused.value) { front?.clearRect(0, 0, width, height); back?.clearRect(0, 0, width, height); }
 }
-
-// --- Event handlers ---
-function onMouseMove(e: MouseEvent) {
-  if (!mouseActive) {
-    cursorX = e.clientX;
-    cursorY = e.clientY;
-    mouseActive = true;
-  }
-  mouseX = e.clientX;
-  mouseY = e.clientY;
+function toggleRain() { paused.value = !paused.value; syncAnimation(); }
+function onMotionChange() { paused.value = !!reducedMotion?.matches; syncAnimation(); }
+function clearPointer() { pointerActive = false; }
+function onPointer(event: PointerEvent) {
+  if (!scene || event.pointerType !== 'mouse' || !pointerQuery?.matches) return;
+  const rect = scene.getBoundingClientRect();
+  mouseX = event.clientX - rect.left; mouseY = event.clientY - rect.top;
+  if (!pointerActive) { cursorX = mouseX; cursorY = mouseY; pointerActive = true; }
 }
-
-function onMouseLeave() {
-  mouseActive = false;
-  mouseX = -200;
-  mouseY = -200;
-  cursorX = -200;
-  cursorY = -200;
-}
-
-let rectTimer: number;
-
 onMounted(() => {
-  const fCanvas = frontCanvasRef.value;
-  const bCanvas = backCanvasRef.value;
-  if (!fCanvas || !bCanvas) return;
-  const fc = fCanvas.getContext('2d');
-  const bc = bCanvas.getContext('2d');
-  if (!fc || !bc) return;
-  ctxFront = fc;
-  ctxBack = bc;
-
-  // Pre-render gradient strips — front is brighter, back is dimmer for depth
-  gradientFront = makeGradientStrip(0.6);
-  gradientBack = makeGradientStrip(BACK_OPACITY);
-
-  // Reset state (in case of View Transition re-mount)
-  drops = [];
-  particles = [];
-
-  resize();
-  for (let i = 0; i < FRONT_COUNT; i++) drops.push(makeDrop(true, false));
-  for (let i = 0; i < BACK_COUNT; i++) drops.push(makeDrop(true, true));
-
-  // Defer alpha mask building so it doesn't block initial frames
-  const deferMask = (fn: () => void) => {
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(fn);
-    } else {
-      setTimeout(fn, 200);
+  scene = document.getElementById(props.sceneId);
+  front = frontCanvas.value?.getContext('2d') || null;
+  back = backCanvas.value?.getContext('2d') || null;
+  if (!scene || !front || !back) return;
+  alive = true;
+  frontStrip = makeStrip(.6); backStrip = makeStrip(.25);
+  reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  pointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+  paused.value = reducedMotion.matches;
+  for (const image of scene.querySelectorAll<HTMLImageElement>('[data-rain-target]')) {
+    if (image.complete && image.naturalWidth) buildMask(image);
+    else {
+      const listener = () => buildMask(image);
+      image.addEventListener('load', listener, { once: true });
+      imageListeners.push({ element: image, listener });
     }
-  };
-
-  const girl = document.getElementById('bg_girl') as HTMLImageElement | null;
-  if (girl) {
-    if (girl.complete && girl.naturalWidth) deferMask(buildGirlMask);
-    else girl.addEventListener('load', () => deferMask(buildGirlMask), { once: true });
   }
-  const logo = document.getElementById('main-logo') as HTMLImageElement | null;
-  if (logo) {
-    if (logo.complete && logo.naturalWidth) deferMask(buildLogoMask);
-    else logo.addEventListener('load', () => deferMask(buildLogoMask), { once: true });
-  }
-
-  updateRects();
-  rectTimer = window.setInterval(updateRects, 500);
-  window.addEventListener('mousemove', onMouseMove);
-  document.addEventListener('mouseleave', onMouseLeave);
-  document.addEventListener('visibilitychange', onVisibilityChange);
+  resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(scene);
+  scene.querySelectorAll('[data-rain-target]').forEach(element => resizeObserver!.observe(element));
+  visibilityObserver = new IntersectionObserver(entries => {
+    inView = entries[0]?.isIntersecting ?? false; syncAnimation();
+  });
+  visibilityObserver.observe(scene);
+  scene.addEventListener('pointermove', onPointer);
+  scene.addEventListener('pointerleave', clearPointer);
+  // Scrolling moves the scene under a stationary mouse; don't leave an invisible obstruction.
+  window.addEventListener('scroll', clearPointer, { passive: true });
   window.addEventListener('resize', resize);
-  lastTime = 0;
-  frameId = requestAnimationFrame(frame);
+  document.addEventListener('visibilitychange', syncAnimation);
+  reducedMotion.addEventListener('change', onMotionChange);
+  resize(); syncAnimation();
 });
-
 onUnmounted(() => {
-  cancelAnimationFrame(frameId);
-  clearInterval(rectTimer);
-  window.removeEventListener('mousemove', onMouseMove);
-  document.removeEventListener('mouseleave', onMouseLeave);
-  document.removeEventListener('visibilitychange', onVisibilityChange);
+  alive = false; cancelAnimationFrame(frameId);
+  resizeObserver?.disconnect(); visibilityObserver?.disconnect();
+  scene?.removeEventListener('pointermove', onPointer);
+  scene?.removeEventListener('pointerleave', clearPointer);
+  window.removeEventListener('scroll', clearPointer);
   window.removeEventListener('resize', resize);
-  drops = [];
-  particles = [];
-  ctxFront = null;
-  ctxBack = null;
+  document.removeEventListener('visibilitychange', syncAnimation);
+  reducedMotion?.removeEventListener('change', onMotionChange);
+  imageListeners.forEach(({ element, listener }) => element.removeEventListener('load', listener));
+  drops = []; particles = []; targets = []; front = null; back = null;
 });
 </script>
 
 <style scoped>
-.rain-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-}
-
-/* Behind the girl (z-index 0) and logo (z-index 10) */
-.rain-back {
-  z-index: -1;
-}
-
-/* In front of everything */
-.rain-front {
-  z-index: 1000;
-}
+.rain-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.rain-back { z-index: 1; }
+.rain-front { z-index: 4; }
+.rain-toggle { position: absolute; right: max(24px, calc((100% - 1224px) / 2)); bottom: 24px; z-index: 6; display: inline-flex; gap: 9px; align-items: center; padding: 8px 12px; border: 1px solid #61789866; border-radius: 6px; background: #0a1021d9; color: #b7c6db; font-size: .8125rem; line-height: 1.4; cursor: pointer; }
+.rain-toggle:hover { color: var(--yellow); border-color: #ffd23e80; }
+.rain-toggle svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+@media(max-width: 600px) { .rain-toggle { right: 20px; bottom: 18px; } }
 </style>
