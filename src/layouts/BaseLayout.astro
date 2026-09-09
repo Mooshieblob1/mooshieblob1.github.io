@@ -25,7 +25,7 @@ const links = [{ href: '/', label: 'Profile' }, { href: '/images', label: 'Image
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <title>{title}</title>
   </head>
-  <body>
+  <body class:list={{ 'home-page': path === '/' }}>
     <a class="skip-to-main" href="#main-content">Skip to main content</a>
     <header class="site-header shell">
       <a class="wordmark" href="/" aria-label="Blob home">

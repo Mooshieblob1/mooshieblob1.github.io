@@ -4,7 +4,7 @@ Blob’s profile, AI image gallery, about page, and image request form. Built wi
 
 ## Pages
 
-- `/` — Profile, social links, page directory, and MooshieUI.
+- `/` — Profile, social links, and MooshieUI in a viewport-sized desktop composition.
 - `/images` — AIbooru gallery with native lazy loading and a keyboard-accessible image viewer.
 - `/about` — Blob’s bio and interests.
 - `/submit` — Image ideas sent through the existing FormSubmit.co form.
