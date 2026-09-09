@@ -1,41 +1,19 @@
 ---
-import NoRainLayout from '../layouts/NoRainLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-
-<NoRainLayout title="About - Mooshieblob" description="About MooshieBlob">
-  <div
-    class="min-h-screen px-5 pb-12 pt-20 text-gray-300 sm:px-8"
-    style="will-change: opacity, filter, transform"
-  >
-    <a href="/" class="mx-auto mb-8 inline-flex rounded-lg p-2">
-      <img
-        src="/assets/images/bloblogo.webp"
-        alt="logo"
-        class="logo h-16 w-auto sm:h-20"
-      />
-    </a>
-
-    <div class="mx-auto max-w-4xl text-center">
-      <h1 class="mb-8 text-4xl font-bold text-yellow-400">About Me</h1>
-
-      <p class="mb-6" style="text-wrap: balance">Hey there! I'm <span class="font-semibold text-yellow-300">MooshieBlob</span> — a developer who loves crafting beautiful web experiences, learning new tech, and making fun projects.</p>
-
-      <p class="mb-6" style="text-wrap: balance">Whether it's working with <span class="text-yellow-300">frontend frameworks</span>, experimenting with <span class="text-yellow-300">AI tools</span>, or designing <span class="text-yellow-300">creative layouts</span>, I'm always excited to bring new ideas to life.</p>
-
-      <p class="mb-6" style="text-wrap: balance">When I'm not coding, you might find me playing games, diving into anime, or exploring new tech innovations. Thanks for visiting my site!</p>
-
-      <a
-        href="/"
-        class="mt-8 inline-block rounded bg-yellow-400 px-6 py-3 font-bold text-gray-900 transition hover:bg-yellow-300"
-      >
-        Back to Home
-      </a>
+<BaseLayout title="About Blob — Mooshieblob" description="A little about Blob: web development, AI experiments, games, and anime.">
+  <div class="shell inner-page">
+    <div class="page-heading"><p class="eyebrow">THE PERSON BEHIND THE PIXELS</p><h1>A bit about <span class="yellow">Blob.</span></h1></div>
+    <div class="about-grid">
+      <div class="about-art"><div class="about-disc" aria-hidden="true"></div><img src="/assets/images/raingirl.webp" alt="Blob’s ratgirl mascot in her yellow raincoat" width="1248" height="1856" /><span class="about-sticker" aria-hidden="true">hello, world.</span></div>
+      <div class="about-copy">
+        <p class="lead">Hey, I’m Blob.<br />You might know me as Mooshieblob.</p>
+        <p>I’m a developer who likes making things for the web. I’m into frontend frameworks, creative layouts, and figuring out how to make an experience feel good to use.</p>
+        <p>AI tools are another part of that curiosity. I experiment with images and build projects like <a href="https://mooshieui.mooshieblob.com" target="_blank" rel="noopener noreferrer">MooshieUI</a>, a more approachable frontend for ComfyUI.</p>
+        <p>Away from code, it’s usually games, anime, or another bit of tech that’s caught my attention. This site is where those interests end up together.</p>
+        <div class="interest-line"><span>Web development</span><span>AI experiments</span><span>Games & anime</span></div>
+        <div class="about-links"><a class="button primary" href="/images">See what I’ve been making ↗</a><a class="text-link" href="https://github.com/Mooshieblob1/" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+      </div>
     </div>
   </div>
-</NoRainLayout>
-
-<style>
-  .logo {
-    filter: drop-shadow(0 0 0.75rem rgba(255, 255, 0, 0.3));
-  }
-</style>
+</BaseLayout>

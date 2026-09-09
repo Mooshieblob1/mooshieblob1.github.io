@@ -1,74 +1,42 @@
-# mooshieblob.com
+# Blob — mooshieblob.com
 
-A personal portfolio and image gallery site built with **Astro 5**, **Vue 3**, and **Tailwind CSS**. Deployed to Cloudflare Pages at [mooshieblob.com](https://mooshieblob.com).
+Blob’s profile, AI image gallery, about page, and image request form. Built with Astro 5, Vue 3, and Tailwind CSS, using the original ratgirl artwork and a navy/yellow palette.
 
 ## Pages
 
-- **Home** — Landing page with an animated splash screen (first visit only), the BlobLogo, social links, and a background illustration.
-- **Images** — Dynamic image gallery powered by a Cloudflare Workers API. Features lazy loading, staggered entrance animations, hover scaling, and a smooth zoom-to-center modal with keyboard navigation.
-- **About** — Personal bio page with accent-highlighted interests.
-- **Submit** — Idea/image request form handled by FormSubmit.co with honeypot spam protection.
+- `/` — Profile, social links, page directory, and MooshieUI.
+- `/images` — AIbooru gallery with native lazy loading and a keyboard-accessible image viewer.
+- `/about` — Blob’s bio and interests.
+- `/submit` — Image ideas sent through the existing FormSubmit.co form.
 
-## Visual Effects
+The site uses normal page links, short cross-document transitions where supported, and reduced-motion preferences. The interface is available immediately, without a splash screen or scroll lock.
 
-| Effect | Description |
-|---|---|
-| **Rain Animation** | 50 CSS-animated raindrops with randomised position, speed, and delay |
-| **Cursor Follower** | Smooth yellow circle trails the mouse via `requestAnimationFrame` (hidden on touch devices) |
-| **Splash Screen** | Logo scales and translates from centre to nav position on first visit, gated by `sessionStorage` |
-| **Gallery Animations** | Staggered slide-in entrances, 1.1× hover scale, and Motion-powered modal zoom |
-| **Page Transitions** | Astro View Transitions with blur, zoom, and translateY effects |
-| **Smooth Scrolling** | Lenis library with custom easing (1.2 s duration) |
-| **Nav Glow** | Text-shadow glow on nav link hover |
+## Gallery repair
 
-## Tech Stack
+The previous gallery depended on a separately deployed Worker that currently returns Cloudflare error 1042 (`workers_dev_script_not_found`). It also assumed media variants always existed at indices 1 and 3.
 
-- **Astro 5** — Static site generation with file-based routing
-- **Vue 3** — Interactive components with partial hydration (`client:load`)
-- **Tailwind CSS 3** — Utility-first styling
-- **Motion** — Smooth gallery modal animations
-- **Lenis** — Smooth scroll behaviour
-- **TypeScript** — Type-checked source
-- **pnpm** — Package manager (v9, Node 20+)
+The gallery now requests `/api/images` on the site's own origin. `server/gallery-api.mjs` fetches the public AIbooru posts API with the `blob_(artist)` tag, found in the original gallery URLs, and a limit of 100. The fixed query cannot be overridden by visitors. Successful responses may be cached for five minutes; unavailable, invalid, and timed-out responses remain uncached and show a retry state.
 
-## Accessibility
+`src/lib/gallery.mjs` validates the response, removes invalid/deleted/duplicate records, accepts legacy top-level image URLs, and selects optional media variants by size and type. Both thumbnails and full-size images fall back through available URLs. The native dialog supports focus management, arrow-key navigation, and Escape.
 
-See [docs/accessibility.md](docs/accessibility.md) for details and testing notes.
-
-- Skip-to-main-content link
-- Visible focus indicators (yellow outline) on all interactive elements
-- Full keyboard navigation — Tab, Enter/Space, Arrow keys, Escape
-- Semantic HTML landmarks (`<main>`, `<nav>`, `<footer>`)
-- ARIA labels, roles, and live regions for screen readers
-- `role="dialog"` with `aria-modal` on the gallery lightbox
-- Focus trapping and restoration in modal views
-
-## External Services
-
-| Service | Purpose |
-|---|---|
-| **Cloudflare Workers** | Serves image data to the gallery at runtime |
-| **FormSubmit.co** | Handles form submissions from the Submit page |
-| **Cloudflare Pages** | Static hosting; security headers via `public/_headers` |
-
-## Design Tokens
-
-| Token | Value |
-|---|---|
-| Background | `#02061a` |
-| Accent | `#ffcc00` / `#fbc21b` |
-| Text | `#ffffff` |
-| Font | Roboto (+ custom Yuruka display font) |
+Live upstream API and CDN availability still depends on AIbooru. Tests use fixtures and controlled HTTP responses; they do not imply a successful live upstream check.
 
 ## Development
 
-```bash
-pnpm install        # Install dependencies
-pnpm dev            # Start dev server
-pnpm build          # Build static site to dist/
-pnpm preview        # Preview the build locally
+Use Node 22+ and pnpm. Existing dependency versions and the lockfile are retained.
+
+```sh
+pnpm install
+pnpm dev       # Astro, including the local /api/images middleware
+pnpm test      # Gallery normalization, failures, and Worker routing
+pnpm build     # Astro pages plus the self-contained Worker
+pnpm preview   # Serve the built Worker and API locally
 ```
 
-## Deployment
+## Hosting
 
-Cloudflare Pages builds and deploys on push to `main`. GitHub Actions runs the same build in CI to verify changes before/at merge.
+`pnpm build` creates `dist/_worker.js` for Cloudflare Pages advanced mode, and the same Worker at `dist/server/index.js` for Sites. HTML and public assets are embedded in the Worker to keep asset serving consistent on both hosts; this currently fits comfortably within Worker size and memory limits. Revisit the packaging strategy if the local asset collection grows substantially.
+
+Cloudflare Pages can continue building with `pnpm build` and output directory `dist`. The Worker and gallery endpoint ship together, so no separate `workers.dev` deployment is required. Plain GitHub Pages cannot run the API.
+
+Security headers are applied by the Worker from `public/_headers`, with a CSP meta fallback. The gallery uses same-origin requests and referrer-free image loading. No API keys are needed for public posts. FormSubmit remains the request-form provider; it has not been replaced or submitted during development.
