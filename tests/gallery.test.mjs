@@ -3,26 +3,26 @@ import assert from 'node:assert/strict';
 import { normalizePost, normalizeGallery, loadGallery } from '../src/lib/gallery.mjs';
 
 test('classic fields work without media_asset', () => {
-  const image = normalizePost({ id: 1, file_url: '/original.png', large_file_url: '/sample.jpg', image_width: 800, image_height: 1200 });
+  const image = normalizePost({ id: 1, rating: 'g', file_url: '/original.png', large_file_url: '/sample.jpg', image_width: 800, image_height: 1200 });
   assert.equal(image.thumbnailUrls[0], 'https://aibooru.online/sample.jpg');
   assert.equal(image.fullUrls[0], 'https://aibooru.online/original.png');
   assert.equal(image.width / image.height, 2 / 3);
 });
 test('variants are selected by size and type, independent of array order', () => {
   const variants = [{ type: 'original', width: 2000, height: 3000, url: '/original.png' }, { type: '720x720', width: 720, height: 1080, url: '/720.webp' }, { type: '180x180', width: 180, height: 270, url: '/180.webp' }];
-  const image = normalizePost({ id: 2, media_asset: { variants } });
+  const image = normalizePost({ id: 2, rating: 'g', media_asset: { variants } });
   assert.equal(image.thumbnailUrls[0], 'https://aibooru.online/720.webp');
   assert.equal(image.fullUrls[0], 'https://aibooru.online/original.png');
   assert.equal(image.height, 3000);
-  assert.deepEqual(image, normalizePost({ id: 2, media_asset: { variants: variants.toReversed() } }));
+  assert.deepEqual(image, normalizePost({ id: 2, rating: 'g', media_asset: { variants: variants.toReversed() } }));
 });
 test('a single variant is sufficient for both views', () => {
-  const image = normalizePost({ id: 3, media_asset: { variants: [{ url: '/only.webp', width: 300, height: 400 }] } });
+  const image = normalizePost({ id: 3, rating: 'g', media_asset: { variants: [{ url: '/only.webp', width: 300, height: 400 }] } });
   assert.equal(image.thumbnailUrls[0], image.fullUrls[0]);
 });
 test('malformed/deleted records and unsupported media do not break the feed', () => {
-  const post = { id: 1, file_url: '/image.png' };
-  const bad = [null, {}, { id: 2, file_url: 'javascript:alert(1)' }, { id: 3, file_url: '/movie.webm' }, { ...post, id: 4, is_deleted: true }];
+  const post = { id: 1, rating: 'g', file_url: '/image.png' };
+  const bad = [null, {}, { id: 2, rating: 'g', file_url: 'javascript:alert(1)' }, { id: 3, rating: 'g', file_url: '/movie.webm' }, { ...post, id: 4, is_deleted: true }];
   assert.equal(normalizeGallery([...bad, post, post]).length, 1);
   assert.deepEqual(normalizeGallery({ posts: [post] }), normalizeGallery({ data: [post] }));
   assert.deepEqual(normalizeGallery([]), []);
@@ -32,7 +32,7 @@ test('malformed/deleted records and unsupported media do not break the feed', ()
 test('HTTP failures and non-JSON pages produce useful errors', async () => {
   await assert.rejects(loadGallery({ fetcher: async () => new Response('Forbidden', { status: 403 }) }), /403/);
   await assert.rejects(loadGallery({ fetcher: async () => new Response('<html>Challenge</html>') }), /unreadable/);
-  const result = await loadGallery({ fetcher: async () => Response.json([{ id: 9, preview_file_url: '/preview.jpg' }]) });
+  const result = await loadGallery({ fetcher: async () => Response.json([{ id: 9, rating: 'g', preview_file_url: '/preview.jpg' }]) });
   assert.equal(result.length, 1);
 });
 
@@ -41,7 +41,8 @@ test('same-origin API uses the fixed artist query and handles unavailable upstre
   const request = new Request('https://blob.example/api/images?url=https://untrusted.example');
   const result = await handleGalleryRequest(request, { fetcher: async url => {
     assert.equal(url, UPSTREAM_URL);
-    return Response.json([{ id: 10, file_url: 'https://cdn.aibooru.download/a.png' }]);
+    assert.equal(new URL(url).searchParams.get('tags'), 'blob_(artist) rating:g');
+    return Response.json([{ id: 10, rating: 'g', file_url: 'https://cdn.aibooru.download/a.png' }]);
   } });
   assert.equal(result.status, 200);
   assert.equal((await result.json())[0].id, 10);
@@ -52,4 +53,28 @@ test('same-origin API uses the fixed artist query and handles unavailable upstre
   assert.equal(invalid.status, 502);
   const disallowed = await handleGalleryRequest(new Request(request, { method: 'POST' }));
   assert.equal(disallowed.status, 405);
+});
+
+test('only General ratings can enter the feed or modal image list', async () => {
+  const { handleGalleryRequest } = await import('../server/gallery-api.mjs');
+  const mixed = ['g', 's', 'q', 'e', undefined, null, 'unknown'].map((rating, i) => ({ id: i + 1, rating, file_url: '/image.png' }));
+  assert.deepEqual(normalizeGallery(mixed).map(post => post.id), [1]);
+  for (const post of mixed.slice(1)) assert.equal(normalizePost(post), null);
+  assert.deepEqual(normalizeGallery(mixed.slice(1)), []);
+  const pending = [];
+  let cachedPosts;
+  const response = await handleGalleryRequest(new Request('https://blob.example/api/images?rating=e'), {
+    fetcher: async () => Response.json(mixed),
+    cache: {
+      match: async key => {
+        assert.equal(new URL(key.url).searchParams.get('rating'), 'general-v1');
+        return undefined;
+      },
+      put: async (key, value) => { cachedPosts = await value.json(); },
+    },
+    context: { waitUntil: promise => pending.push(promise) },
+  });
+  assert.deepEqual((await response.json()).map(post => post.id), [1]);
+  await Promise.all(pending);
+  assert.deepEqual(cachedPosts.map(post => post.rating), ['g']);
 });
