@@ -23,7 +23,7 @@ test('media route streams verified bytes even with a generic upstream MIME type'
   const response = await handleMediaRequest(request(path, { headers: { Cookie: 'private', Authorization: 'secret' } }), {
     fetcher: async (url, options) => {
       assert.equal(url, origin + path);
-      assert.equal(options.redirect, 'error');
+      assert.equal(options.redirect, 'manual');
       assert.equal(options.headers.Cookie, undefined);
       assert.equal(options.headers.Authorization, undefined);
       assert.equal(options.headers.Referer, undefined);

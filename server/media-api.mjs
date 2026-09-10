@@ -57,12 +57,12 @@ export async function handleMediaRequest(request, { fetcher = fetch, cache, cont
   try {
     const upstream = await fetcher(MEDIA_ORIGIN + path, {
       headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif', 'User-Agent': 'MooshieblobGallery/1.0 (https://mooshieblob.com)' },
-      redirect: 'error', signal: AbortSignal.timeout(30000),
+      redirect: 'manual', signal: AbortSignal.timeout(30000),
     });
     if (!upstream.ok || !upstream.body) {
       await upstream.body?.cancel();
       console.warn('Gallery media upstream failed:', upstream.status);
-      return mediaError('The image host is temporarily unavailable.', 502);
+      return mediaError(`The image host returned HTTP ${upstream.status}.`, 502, { 'X-Gallery-Upstream-Status': String(upstream.status) });
     }
     // A CDN error/challenge page must never be served or cached as an image.
     // Detect actual bytes so a valid image with a generic MIME type still works.
@@ -81,7 +81,9 @@ export async function handleMediaRequest(request, { fetcher = fetch, cache, cont
     if (cache && context) context.waitUntil(cache.put(key, response.clone()).catch(() => {}));
     return response;
   } catch (error) {
-    console.warn('Gallery media request failed:', error.name);
-    return mediaError('The image host could not be reached.', 502);
+    console.warn('Gallery media request failed:', error.name, error.message);
+    const timedOut = error.name === 'TimeoutError' || error.name === 'AbortError';
+    return mediaError(timedOut ? 'The image host timed out.' : 'The image host could not be reached.', timedOut ? 504 : 502,
+      { 'X-Gallery-Failure': timedOut ? 'upstream-timeout' : 'upstream-network' });
   }
 }
