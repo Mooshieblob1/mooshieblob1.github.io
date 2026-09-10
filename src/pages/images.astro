@@ -1,23 +1,14 @@
 ---
-import NoRainLayout from '../layouts/NoRainLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import ImageGallery from '../components/ImageGallery.vue';
 ---
-
-<NoRainLayout title="Images - Mooshieblob" description="Image gallery">
-  <div class="px-5 pb-10 pt-20 sm:px-8">
-    <div class="mb-6 flex justify-center">
-      <a href="/" class="inline-flex rounded-lg p-2">
-        <img
-          src="/assets/images/bloblogo.webp"
-          alt="logo"
-          class="h-16 w-auto cursor-pointer sm:h-20"
-        />
-      </a>
+<BaseLayout title="Images — Blob" description="A selection of Blob’s AI image posts. Browse the gallery and open images at full size.">
+  <div class="shell inner-page gallery-page">
+    <div class="page-heading gallery-heading">
+      <div><p class="eyebrow">THE IMAGE COLLECTION</p><h1>A little <span class="yellow">imagination.</span></h1><p class="page-intro">A selection of my posts from <a class="source-link" href="https://aibooru.online/users/2949" target="_blank" rel="noopener noreferrer">AIbooru ↗</a>.</p></div>
+      <a class="text-link" href="/submit">Got an image idea? <span aria-hidden="true">↗</span></a>
     </div>
-
-    <div class="mx-auto w-full max-w-7xl">
-      <p class="pb-4 text-center">This is a smaller selection of my posts.</p>
-      <ImageGallery client:load />
-    </div>
+    <ImageGallery client:load />
+    <noscript><p class="noscript-notice">Enable JavaScript to load the image collection.</p></noscript>
   </div>
-</NoRainLayout>
+</BaseLayout>

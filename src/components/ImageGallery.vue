@@ -1,642 +1,161 @@
-<template>
-  <div>
-    <!-- Loading Spinner for initial load -->
-    <div v-if="isLoading" class="flex h-64 items-center justify-center" role="status" aria-live="polite">
-      <div class="spinner" aria-hidden="true"></div>
-      <span class="sr-only">Loading images...</span>
-    </div>
-
-    <div v-else ref="gridRef" class="image-grid">
-      <div
-        v-for="(col, colIdx) in columns"
-        :key="colIdx"
-        class="masonry-column"
-      >
-        <div
-          v-for="item in col"
-          :key="item.image.id"
-          class="image-item"
-          role="button"
-          tabindex="0"
-          :aria-label="`View image: ${item.image.tag_string || 'gallery image'}`"
-          @click="(e) => openImage(item.image, e)"
-          @keydown.enter="(e) => openImage(item.image, e)"
-          @keydown.space.prevent="(e) => openImage(item.image, e)"
-          @pointerenter="preloadFullImage(item.image)"
-        >
-          <div
-            :ref="(el) => setImageRef(item.index, el)"
-            :data-index="item.index"
-            class="image-cell relative overflow-hidden rounded-[4px]"
-            :class="{
-              'is-visible': imageInView[item.index],
-              'from-below': !imageInView[item.index] && imageDirection[item.index] === 'below',
-              'from-above': !imageInView[item.index] && imageDirection[item.index] === 'above',
-            }"
-            :style="{
-              transitionDelay: `${(item.index % 4) * 60}ms`,
-              aspectRatio: getAspectRatio(item.image),
-            }"
-          >
-            <img
-              v-if="shouldLoadImage[item.index]"
-              :src="item.image.media_asset.variants[1].url"
-              :alt="item.image.tag_string || 'Image from gallery'"
-              loading="lazy"
-              class="absolute inset-0 h-full w-full object-cover transition-opacity duration-500"
-              :class="{ 'opacity-100': loadedImages[item.index], 'opacity-0': !loadedImages[item.index] }"
-              @load="onImageLoad(item.index)"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bokeh backdrop (fades in/out independently of modal content) -->
-    <Teleport to="body">
-      <div
-        v-if="overlayVisible"
-        ref="overlayRef"
-        class="image-backdrop"
-        @click="closeImage"
-      ></div>
-    </Teleport>
-
-    <!-- Modal content (shown after open animation finishes) -->
-    <Teleport to="body">
-      <div
-        v-if="selectedImage"
-        class="image-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Enlarged image view"
-        @click.self="closeImage"
-        @keydown="handleModalKeyDown"
-        tabindex="0"
-      >
-        <!-- Close button for accessibility -->
-        <button
-          @click="closeImage"
-          aria-label="Close enlarged image"
-          class="absolute top-4 right-4 bg-[#fbc21b] text-[#02061a] w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#ffd966] transition-colors focus:outline-none focus:ring-2 focus:ring-[#fbc21b]"
-        >
-          <span aria-hidden="true" class="text-2xl font-bold">&times;</span>
-        </button>
-      </div>
-    </Teleport>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-import { animate } from 'motion';
-
-interface ImageVariant {
-  url: string;
-  width: number;
-  height: number;
-  file_ext: string;
-  type: string;
-}
-
-interface MediaAsset {
-  variants: ImageVariant[];
-}
-
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { loadGallery } from '../lib/gallery.mjs';
 interface GalleryImage {
-  id: number;
-  tag_string?: string;
-  image_width?: number;
-  image_height?: number;
-  large_file_url?: string;
-  file_url?: string;
-  media_asset: MediaAsset;
+  id: number; width: number; height: number;
+  thumbnailUrls: string[]; fullUrls: string[]; alt: string; postUrl: string;
 }
-
 const images = ref<GalleryImage[]>([]);
-const selectedImage = ref<GalleryImage | null>(null);
-const loadedImages = ref<boolean[]>([]);
-const shouldLoadImage = ref<boolean[]>([]);
-const imageInView = ref<boolean[]>([]);
-const imageDirection = ref<string[]>([]);
-const imageRefs = ref<Record<number, Element | null>>({});
-const isLoading = ref(true);
-const hiddenIndex = ref<number | null>(null);
-const gridRef = ref<HTMLElement | null>(null);
-const overlayVisible = ref(false);
-const overlayRef = ref<HTMLElement | null>(null);
-let lastFocusedElement: Element | null = null;
-let placeholderClone: HTMLElement | null = null;
-let fullSizeLoader: HTMLImageElement | null = null;
-let openOriginalRect: DOMRect | null = null; // untransformed rect from open
+const loading = ref(true);
+const error = ref('');
+const attempts = ref<Record<number, number>>({});
+const selectedIndex = ref(-1);
+const selectedImage = computed(() => images.value[selectedIndex.value] || null);
+const dialog = ref<HTMLDialogElement | null>(null);
+const fullAttempt = ref(0);
+const fullLoaded = ref(false);
+let controller: AbortController | null = null;
+let active = true;
+let previousFocus: HTMLElement | null = null;
+let previousOverflow = '';
 
-// --- Masonry layout ---
-const GAP = 8;
-const columns = ref<{ image: GalleryImage; index: number }[][]>([]);
-const isMobile = ref(false);
-
-function getAspectRatio(image: GalleryImage): number {
-  if (image.image_width && image.image_height) return image.image_width / image.image_height;
-  return 1;
-}
-
-function computeLayout() {
-  if (!gridRef.value || images.value.length === 0) return;
-
-  const containerWidth = gridRef.value.clientWidth;
-  isMobile.value = containerWidth <= 780;
-
-  if (isMobile.value) {
-    // Mobile: 2 columns, simple round-robin
-    const cols: { image: GalleryImage; index: number }[][] = [[], []];
-    images.value.forEach((img, i) => cols[i % 2].push({ image: img, index: i }));
-    columns.value = cols;
-    return;
-  }
-
-  // Determine column count from container width
-  const minColWidth = 200;
-  const colCount = Math.max(2, Math.min(8, Math.floor((containerWidth + GAP) / (minColWidth + GAP))));
-  const colWidth = (containerWidth - (colCount - 1) * GAP) / colCount;
-
-  // Place each image into the shortest column
-  const cols: { image: GalleryImage; index: number }[][] = Array.from({ length: colCount }, () => []);
-  const colHeights = new Float64Array(colCount);
-
-  for (let i = 0; i < images.value.length; i++) {
-    const img = images.value[i];
-    const ratio = getAspectRatio(img);
-    const itemHeight = colWidth / ratio;
-
-    // Find shortest column
-    let shortest = 0;
-    for (let c = 1; c < colCount; c++) {
-      if (colHeights[c] < colHeights[shortest]) shortest = c;
-    }
-
-    cols[shortest].push({ image: img, index: i });
-    colHeights[shortest] += itemHeight + GAP;
-  }
-
-  columns.value = cols;
-}
-
-// Spring with slight overshoot for bouncy settle
-const BOUNCE_SPRING = { type: 'spring' as const, stiffness: 300, damping: 22, mass: 1 };
-
-// Preload full-size images on hover — track which are fully cached
-const preloadedUrls = new Set<string>();
-const cachedUrls = new Set<string>();
-function getFullUrl(image: GalleryImage): string {
-  return image.media_asset.variants[3]?.url || image.large_file_url || image.file_url || '';
-}
-function preloadFullImage(image: GalleryImage) {
-  const url = getFullUrl(image);
-  if (!url || preloadedUrls.has(url)) return;
-  preloadedUrls.add(url);
-  const img = new Image();
-  img.onload = () => { cachedUrls.add(url); };
-  img.src = url;
-  // Already complete (cached from a previous visit)
-  if (img.complete) cachedUrls.add(url);
-}
-
-function setImageRef(index: number, el: any) {
-  imageRefs.value[index] = el;
-}
-
-const fetchImages = async () => {
-  isLoading.value = true;
-  const url = 'https://nameless-moon-1f3f.kentvuong88-cloudflare.workers.dev/';
+async function fetchImages() {
+  controller?.abort();
+  const request = new AbortController();
+  controller = request;
+  const timeout = window.setTimeout(() => request.abort(), 15000);
+  loading.value = true;
+  error.value = '';
   try {
-    const response = await fetch(url);
-    const data = await response.json();
-    images.value = data;
-    loadedImages.value = new Array(data.length).fill(false);
-    shouldLoadImage.value = new Array(data.length).fill(false);
-    imageInView.value = new Array(data.length).fill(false);
-    imageDirection.value = new Array(data.length).fill('below');
-  } catch (error) {
-    console.error('Error fetching images:', error);
+    const result = await loadGallery({ signal: request.signal });
+    if (active && controller === request) { images.value = result; attempts.value = {}; }
+  } catch (reason) {
+    if (active && controller === request) {
+      error.value = request.signal.aborted ? 'The image feed took too long to respond. Please try again.' :
+        reason instanceof TypeError ? 'The image feed could not be reached. Please try again shortly.' :
+        reason instanceof Error ? reason.message : 'The gallery could not be loaded.';
+    }
   } finally {
-    isLoading.value = false;
+    window.clearTimeout(timeout);
+    if (active && controller === request) loading.value = false;
   }
-};
-
-const onImageLoad = (index: number) => {
-  loadedImages.value[index] = true;
-};
-
-const openImage = (image: GalleryImage, event: Event) => {
-  lastFocusedElement = document.activeElement;
-  const target = (event.currentTarget as HTMLElement).querySelector('img');
-  if (!target) return;
-  const rect = target.getBoundingClientRect();
-
-  const clone = target.cloneNode(true) as HTMLElement;
-  Object.assign(clone.style, {
-    position: 'fixed',
-    top: `${rect.top}px`,
-    left: `${rect.left}px`,
-    width: `${rect.width}px`,
-    height: `${rect.height}px`,
-    zIndex: '2147483647',
-    borderRadius: '4px',
-    margin: '0',
-    pointerEvents: 'none',
-    transform: 'none',
-    willChange: 'transform',
-    transformOrigin: 'center center',
-  });
-
-  document.body.appendChild(clone);
-  openOriginalRect = rect;
-
-  const index = images.value.findIndex((img) => img.id === image.id);
-  hiddenIndex.value = index;
-
-  const original = imageRefs.value[index]?.querySelector('img');
-  if (original) (original as HTMLElement).style.visibility = 'hidden';
-
-  // Fade in bokeh backdrop during the animation
-  overlayVisible.value = true;
-  nextTick(() => {
-    if (overlayRef.value) {
-      animate(
-        overlayRef.value,
-        { opacity: [0, 1], backdropFilter: ['blur(0px)', 'blur(16px)'] },
-        { duration: 0.45, easing: [0.25, 0.46, 0.45, 0.94] },
-      );
-    }
-  });
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const aspectRatio = rect.width / rect.height;
-
-  let targetWidth = vw * 0.8;
-  let targetHeight = targetWidth / aspectRatio;
-
-  if (targetHeight > vh * 0.8) {
-    targetHeight = vh * 0.8;
-    targetWidth = targetHeight * aspectRatio;
-  }
-
-  const centerX = window.innerWidth / 2;
-  const centerY = window.innerHeight / 2;
-
-  const translateX = centerX - (rect.left + rect.width / 2);
-  const translateY = centerY - (rect.top + rect.height / 2);
-
-  const scaleX = targetWidth / rect.width;
-  const scaleY = targetHeight / rect.height;
-
-  animate(
-    clone,
-    {
-      transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
-    },
-    BOUNCE_SPRING,
-  ).then(() => {
-    placeholderClone = clone;
-    selectedImage.value = image;
-    nextTick(() => {
-      // Focus the modal overlay for keyboard events
-      const modal = document.querySelector('.image-modal') as HTMLElement | null;
-      modal?.focus();
-    });
-
-    // Load the full-size image and swap it onto the clone seamlessly
-    const fullUrl = getFullUrl(image);
-    if (fullUrl) {
-      // If already cached, swap immediately
-      if (cachedUrls.has(fullUrl)) {
-        swapToFullSize(fullUrl);
-      } else {
-        fullSizeLoader = new Image();
-        fullSizeLoader.onload = () => {
-          cachedUrls.add(fullUrl);
-          swapToFullSize(fullUrl);
-          fullSizeLoader = null;
-        };
-        fullSizeLoader.src = fullUrl;
-      }
-    }
-  });
-};
-
-function swapToFullSize(url: string) {
-  if (!placeholderClone) return;
-  // Decode before swapping to avoid any flash
-  const img = new Image();
-  img.src = url;
-  (img.decode ? img.decode() : Promise.resolve()).then(() => {
-    if (placeholderClone) {
-      (placeholderClone as HTMLImageElement).src = url;
-    }
-  }).catch(() => {
-    // decode() can fail on some browsers/formats, swap anyway
-    if (placeholderClone) {
-      (placeholderClone as HTMLImageElement).src = url;
-    }
-  });
 }
-
-const closeImage = () => {
-  if (!selectedImage.value && !placeholderClone) return;
-
-  // Cancel any in-flight full-size load
-  if (fullSizeLoader) {
-    fullSizeLoader.onload = null;
-    fullSizeLoader = null;
-  }
-
-  // The placeholder clone IS the displayed image — use it directly for close animation
-  const clone = placeholderClone;
-  placeholderClone = null;
-
-  // Find grid target
-  const gridImg =
-    hiddenIndex.value !== null
-      ? (imageRefs.value[hiddenIndex.value]?.querySelector('img') as HTMLElement | null)
-      : null;
-  const gridRect = gridImg?.getBoundingClientRect();
-
-  // Clear modal state
-  selectedImage.value = null;
-
-  // Fade out bokeh backdrop
-  if (overlayRef.value) {
-    animate(
-      overlayRef.value,
-      { opacity: 0, backdropFilter: 'blur(0px)' },
-      { duration: 0.45, easing: [0.25, 0.46, 0.45, 0.94] },
-    ).then(() => { overlayVisible.value = false; });
-  } else {
-    overlayVisible.value = false;
-  }
-
-  // No clone or grid target — just clean up
-  if (!clone || !gridRect || !openOriginalRect) {
-    if (clone?.parentNode) clone.parentNode.removeChild(clone);
-    hiddenIndex.value = null;
-    if (gridImg) gridImg.style.visibility = 'visible';
-    if (lastFocusedElement) {
-      (lastFocusedElement as HTMLElement).focus();
-      lastFocusedElement = null;
-    }
-    return;
-  }
-
-  // Compute close transform relative to the clone's original untransformed position.
-  // The clone's CSS top/left/width/height are still the original thumbnail values.
-  const orig = openOriginalRect!;
-  const origCenterX = orig.left + orig.width / 2;
-  const origCenterY = orig.top + orig.height / 2;
-  const gridCenterX = gridRect.left + gridRect.width / 2;
-  const gridCenterY = gridRect.top + gridRect.height / 2;
-
-  const translateX = gridCenterX - origCenterX;
-  const translateY = gridCenterY - origCenterY;
-  const scaleX = gridRect.width / orig.width;
-  const scaleY = gridRect.height / orig.height;
-
-  animate(
-    clone,
-    {
-      transform: `translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`,
-    },
-    BOUNCE_SPRING,
-  ).then(() => {
-    if (clone.parentNode) clone.parentNode.removeChild(clone);
-    if (gridImg) gridImg.style.visibility = 'visible';
-    hiddenIndex.value = null;
-
-    if (lastFocusedElement) {
-      (lastFocusedElement as HTMLElement).focus();
-      lastFocusedElement = null;
-    }
-  });
-};
-
-function removePlaceholder() {
-  if (placeholderClone && placeholderClone.parentNode) {
-    placeholderClone.parentNode.removeChild(placeholderClone);
-  }
-  placeholderClone = null;
+async function openImage(index: number) {
+  previousFocus = document.activeElement as HTMLElement;
+  previousOverflow = document.body.style.overflow;
+  selectImage(index);
+  await nextTick();
+  dialog.value?.showModal();
+  document.body.style.overflow = 'hidden';
 }
-
-let loadObserver: IntersectionObserver;
-let animObserver: IntersectionObserver;
-let resizeObserver: ResizeObserver;
-
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape' && (selectedImage.value || overlayVisible.value)) {
-    closeImage();
-  }
-};
-
-const handleModalKeyDown = (event: KeyboardEvent) => {
-  if (event.key === 'Escape') {
-    closeImage();
-  }
-
-  if (!selectedImage.value) return;
-
-  const currentIndex = images.value.findIndex((img) => img.id === selectedImage.value?.id);
-
-  if (event.key === 'ArrowLeft' && currentIndex > 0) {
-    event.preventDefault();
-    const newImage = images.value[currentIndex - 1];
-    selectedImage.value = newImage;
-    // Swap placeholder clone to new thumbnail, then load full-size
-    if (placeholderClone) {
-      (placeholderClone as HTMLImageElement).src = newImage.media_asset.variants[1].url;
-    }
-    const fullUrl = getFullUrl(newImage);
-    if (fullUrl) swapToFullSize(fullUrl);
-  } else if (event.key === 'ArrowRight' && currentIndex < images.value.length - 1) {
-    event.preventDefault();
-    const newImage = images.value[currentIndex + 1];
-    selectedImage.value = newImage;
-    if (placeholderClone) {
-      (placeholderClone as HTMLImageElement).src = newImage.media_asset.variants[1].url;
-    }
-    const fullUrl = getFullUrl(newImage);
-    if (fullUrl) swapToFullSize(fullUrl);
-  }
-};
-
-onMounted(() => {
-  fetchImages().then(() => {
-    nextTick(() => {
-      computeLayout();
-
-      // Recompute layout when container resizes
-      if (gridRef.value) {
-        resizeObserver = new ResizeObserver(() => {
-          computeLayout();
-        });
-        resizeObserver.observe(gridRef.value);
-      }
-
-      // Wait for columns to render before attaching observers
-      nextTick(() => {
-
-      // Preload observer: large margin to add <img> to DOM early
-      loadObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const index = parseInt((entry.target as HTMLElement).dataset.index!);
-              shouldLoadImage.value[index] = true;
-              loadObserver.unobserve(entry.target); // Only need to trigger once
-            }
-          });
-        },
-        { rootMargin: '100% 0px 100% 0px' },
-      );
-
-      // Animation observer: tight margin for visible scroll enter/exit
-      animObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const index = parseInt((entry.target as HTMLElement).dataset.index!);
-            if (entry.isIntersecting) {
-              imageInView.value[index] = true;
-            } else {
-              imageInView.value[index] = false;
-              const rect = entry.boundingClientRect;
-              if (rect.bottom < 0) {
-                imageDirection.value[index] = 'above';
-              } else {
-                imageDirection.value[index] = 'below';
-              }
-            }
-          });
-        },
-        { threshold: 0.05, rootMargin: '50px 0px 50px 0px' },
-      );
-
-      Object.values(imageRefs.value).forEach((ref) => {
-        if (ref) {
-          loadObserver.observe(ref);
-          animObserver.observe(ref);
-        }
-      });
-      }); // end inner nextTick
-    });
-  });
-
-  window.addEventListener('keydown', handleKeyDown);
-});
-
+function selectImage(index: number) {
+  if (index < 0 || index >= images.value.length) return;
+  selectedIndex.value = index;
+  fullAttempt.value = 0;
+  fullLoaded.value = false;
+}
+function closeImage() { dialog.value?.close(); }
+function onClose() {
+  selectedIndex.value = -1;
+  document.body.style.overflow = previousOverflow;
+  if (previousFocus?.isConnected) previousFocus.focus();
+}
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowLeft') { event.preventDefault(); selectImage(selectedIndex.value - 1); }
+  if (event.key === 'ArrowRight') { event.preventDefault(); selectImage(selectedIndex.value + 1); }
+}
+onMounted(fetchImages);
 onUnmounted(() => {
-  if (loadObserver) loadObserver.disconnect();
-  if (animObserver) animObserver.disconnect();
-  if (resizeObserver) resizeObserver.disconnect();
-  window.removeEventListener('keydown', handleKeyDown);
+  active = false;
+  controller?.abort();
+  if (selectedIndex.value !== -1) document.body.style.overflow = previousOverflow;
+  dialog.value?.close();
 });
 </script>
 
+<template>
+  <section class="gallery" aria-label="Blob's image gallery" :aria-busy="loading">
+    <div v-if="loading" class="gallery-state" role="status">
+      <span class="gallery-spinner" aria-hidden="true"></span><p>Loading the collection…</p>
+    </div>
+    <div v-else-if="error" class="gallery-state" role="alert">
+      <span class="state-symbol" aria-hidden="true">!</span>
+      <h2>The gallery is taking a rain check.</h2><p>{{ error }}</p>
+      <button class="button primary" @click="fetchImages">Try again</button>
+    </div>
+    <div v-else-if="!images.length" class="gallery-state">
+      <h2>No images here just yet.</h2><p>Check back for more from Blob.</p>
+      <button class="button secondary" @click="fetchImages">Refresh gallery</button>
+    </div>
+    <template v-else>
+      <div class="gallery-meta"><span>{{ images.length }} images</span><span>Click an image to take a closer look</span></div>
+      <div class="image-grid">
+        <button v-for="(item, index) in images" :key="item.id" type="button" class="image-item"
+          :style="{ aspectRatio: `${item.width} / ${item.height}` }" :aria-label="`View ${item.alt}`" @click="openImage(index)">
+          <img v-if="(attempts[item.id] || 0) < item.thumbnailUrls.length" :key="item.thumbnailUrls[attempts[item.id] || 0]"
+            :src="item.thumbnailUrls[attempts[item.id] || 0]" :alt="item.alt" :width="item.width" :height="item.height"
+            loading="lazy" decoding="async" referrerpolicy="no-referrer" @error="attempts[item.id] = (attempts[item.id] || 0) + 1" />
+          <span v-else class="image-unavailable">Preview unavailable<br /><small>Open image details</small></span>
+          <span class="image-caption"><span>#{{ item.id }}</span><span aria-hidden="true">↗</span></span>
+        </button>
+      </div>
+    </template>
+    <dialog ref="dialog" class="image-dialog" aria-label="Enlarged image" @close="onClose" @click.self="closeImage" @keydown="onKeydown">
+      <div v-if="selectedImage" class="viewer">
+        <div class="viewer-toolbar">
+          <span>{{ selectedIndex + 1 }} / {{ images.length }}</span>
+          <a :href="selectedImage.postUrl" target="_blank" rel="noopener noreferrer">View on AIbooru ↗</a>
+          <button class="icon-button" type="button" aria-label="Close image" autofocus @click="closeImage">×</button>
+        </div>
+        <div class="viewer-image">
+          <img v-if="fullAttempt < selectedImage.fullUrls.length" :key="`${selectedImage.id}-${fullAttempt}`"
+            :src="selectedImage.fullUrls[fullAttempt]" :alt="selectedImage.alt" referrerpolicy="no-referrer"
+            @load="fullLoaded = true" @error="fullAttempt++; fullLoaded = false" />
+          <span v-if="!fullLoaded && fullAttempt < selectedImage.fullUrls.length" class="viewer-loading" role="status">Loading image…</span>
+          <div v-if="fullAttempt >= selectedImage.fullUrls.length" class="viewer-error" role="status">
+            <p>This image couldn’t be loaded.</p><a :href="selectedImage.postUrl" target="_blank" rel="noopener noreferrer">Open the original post ↗</a>
+          </div>
+        </div>
+        <div class="viewer-navigation">
+          <button class="button secondary" :disabled="selectedIndex === 0" @click="selectImage(selectedIndex - 1)">← Previous</button>
+          <span class="viewer-hint">← → to browse · Esc to close</span>
+          <button class="button secondary" :disabled="selectedIndex === images.length - 1" @click="selectImage(selectedIndex + 1)">Next →</button>
+        </div>
+      </div>
+    </dialog>
+  </section>
+</template>
+
 <style scoped>
-.image-cell {
-  transform: translateY(0) translateZ(0);
-  opacity: 1;
-  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              opacity 0.4s ease;
-  will-change: transform, opacity;
-}
-
-.image-cell.from-below {
-  transform: translateY(60px) translateZ(0);
-  opacity: 0;
-}
-
-.image-cell.from-above {
-  transform: translateY(-60px) translateZ(0);
-  opacity: 0;
-}
-
-.image-cell.is-visible {
-  transform: translateY(0) translateZ(0);
-  opacity: 1;
-}
-
-.image-grid {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-
-.masonry-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.image-item {
-  position: relative;
-  overflow: hidden;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.image-item:hover img {
-  transform: scale(1.1);
-}
-
-.image-item img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease-in-out;
-  border-radius: 4px;
-}
-
-.image-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 998;
-  opacity: 0;
-}
-
-.image-modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.spinner {
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top: 4px solid #ffcc00;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
+.gallery-state { min-height: 380px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; padding: 32px 20px; border: 1px dashed var(--border, #2a3044); border-radius: 18px; }
+.gallery-state h2 { font-size: 1.5rem; color: var(--text, white); }
+.gallery-state p { color: var(--muted, #b4bdd3); max-width: 540px; }
+.gallery-spinner { width: 32px; height: 32px; border: 2px solid #ffffff26; border-top-color: var(--yellow, #ffcc00); border-radius: 50%; animation: spin .8s linear infinite; }
+.state-symbol { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: var(--yellow, #ffcc00); border: 1px solid currentColor; font-size: 1.4rem; }
+.gallery-meta { display: flex; justify-content: space-between; gap: 16px; color: var(--muted, #b4bdd3); font-size: .875rem; margin-bottom: 22px; }
+.image-grid { columns: 4; column-gap: 16px; }
+.image-item { display: block; width: 100%; break-inside: avoid; overflow: hidden; position: relative; margin: 0 0 16px; padding: 0; border: 0; border-radius: 10px; background: var(--surface, #111b31); cursor: pointer; }
+.image-item img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .3s ease; }
+.image-item:hover img { transform: scale(1.025); }
+.image-caption { position: absolute; display: flex; justify-content: space-between; align-items: end; inset: auto 0 0; padding: 34px 16px 14px; color: #fff; font-size: .875rem; background: linear-gradient(transparent, #000b); opacity: 0; transition: opacity .2s; }
+.image-item:hover .image-caption, .image-item:focus-visible .image-caption { opacity: 1; }
+.image-unavailable { display: grid; align-content: center; min-height: 160px; height: 100%; padding: 20px; color: var(--muted, #b4bdd3); font-size: 1rem; }
+.image-unavailable small { font-size: .875rem; margin-top: 8px; color: var(--yellow, #ffcc00); }
+.image-dialog { position: fixed; inset: 0; width: min(1200px, calc(100vw - 40px)); max-width: none; max-height: calc(100dvh - 40px); padding: 0; margin: auto; border: 1px solid #ffffff26; border-radius: 18px; background: #0c1223; color: #f7f8fc; overflow: auto; }
+.image-dialog::backdrop { background: #030714d9; backdrop-filter: blur(8px); }
+.viewer { padding: 16px 22px; }
+.viewer-toolbar { display: flex; align-items: center; gap: 20px; font-size: .875rem; }
+.viewer-toolbar > a { margin-left: auto; color: #ffcc00; }
+.icon-button { width: 42px; height: 42px; border-radius: 50%; background: #ffffff10; color: white; border: 1px solid #ffffff20; font-size: 1.75rem; cursor: pointer; }
+.viewer-image { position: relative; min-height: 150px; display: grid; place-items: center; margin: 16px 0; }
+.viewer-image img { display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100dvh - 235px); object-fit: contain; }
+.viewer-loading { position: absolute; background: #0c1223; padding: 10px 20px; border-radius: 8px; }
+.viewer-error { padding: 50px 20px; text-align: center; }
+.viewer-error a { display: inline-block; margin-top: 16px; color: #ffcc00; }
+.viewer-navigation { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.viewer-hint { color: #acb6cb; font-size: .875rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media(max-width: 1000px) { .image-grid { columns: 3; } }
+@media(max-width: 650px) { .image-grid { columns: 2; column-gap: 10px; } .image-item { margin-bottom: 10px; } .gallery-meta span:last-child, .viewer-hint { display: none; } .viewer { padding: 12px; } .image-dialog { width: calc(100vw - 16px); } }
+@media(prefers-reduced-motion: reduce) { .gallery-spinner { animation: none; } .image-item img, .image-caption { transition: none; } }
 </style>

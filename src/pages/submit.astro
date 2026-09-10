@@ -1,64 +1,30 @@
 ---
-import NoRainLayout from '../layouts/NoRainLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
-
-<NoRainLayout title="Submit an Idea - Mooshieblob" description="Submit your image requests">
-  <div
-    class="flex min-h-screen w-full items-center justify-center px-5 pb-12 pt-20 sm:px-8"
-  >
-    <div class="w-full max-w-md rounded-lg bg-gray-800 p-6 shadow-lg">
-      <a href="/" class="mx-auto mb-4 flex w-fit rounded-lg p-2">
-        <img
-          src="/assets/images/bloblogo.webp"
-          alt="logo"
-          class="logo h-16 w-auto cursor-pointer sm:h-20"
-        />
-      </a>
-      <h1 class="mb-4 text-center text-2xl font-bold text-yellow-400">
-        Submit Your Image requests.
-      </h1>
-      <form
-        action="https://formsubmit.co/blob@mooshieblob.com"
-        method="POST"
-        class="w-full"
-      >
-        <!-- FormSubmit honeypot to prevent spam -->
-        <input type="text" name="_honey" style="display: none" aria-hidden="true" tabindex="-1" />
-
-        <input type="hidden" name="_subject" value="New image request from mooshieblob.com" />
-
-        <!-- Redirect after submission -->
-        <input
-          type="hidden"
-          name="_next"
-          value="https://www.mooshieblob.com/submit?submitted=1"
-        />
-
-        <div class="mb-4">
-          <label for="idea" class="mb-2 block text-yellow-300"
-            >Your Idea:</label
-          >
-          <textarea
-            id="idea"
-            name="message"
-            class="w-full rounded border border-gray-700 bg-gray-700 p-2 text-white placeholder-gray-400"
-            rows="6"
-            placeholder="Share your submission ideas here..."
-            required></textarea>
-        </div>
-        <button
-          type="submit"
-          class="w-full rounded bg-yellow-400 px-4 py-2 font-bold text-gray-900 transition-colors hover:bg-yellow-300"
-        >
-          Submit
-        </button>
-      </form>
+<BaseLayout title="Submit an idea — Blob" description="Have an image in mind? Send your idea to Blob.">
+  <div class="shell inner-page submit-page">
+    <div class="submit-grid">
+      <div class="submit-intro"><p class="eyebrow">YOUR IDEA, MY NEXT EXPERIMENT</p><h1>Something<br />on your <span class="yellow">mind?</span></h1><p class="page-intro">A character, a scene, or a wonderfully specific idea.<br />Send an image request my way.</p><div class="submit-mascot"><img src="/assets/images/raingirl.webp" alt="Ratgirl mascot waiting to hear your idea" width="1248" height="1856" /><span aria-hidden="true">I’m listening.</span></div></div>
+      <div class="request-panel">
+        <h2>Leave an idea.</h2><p class="form-description">Tell me what you’d like to see.</p>
+        <div id="submission-success" class="success-message" role="status" hidden>Thanks for sharing your idea.</div>
+        <form action="https://formsubmit.co/blob@mooshieblob.com" method="POST" data-astro-reload>
+          <input type="text" name="_honey" class="honeypot" aria-hidden="true" tabindex="-1" autocomplete="off" />
+          <input type="hidden" name="_subject" value="New image request from mooshieblob.com" />
+          <input id="form-return" type="hidden" name="_next" value="https://mooshieblob.com/submit?submitted=1" />
+          <label for="idea">Your image idea</label>
+          <textarea id="idea" name="message" rows="8" maxlength="5000" placeholder="I’m thinking of…" required aria-describedby="idea-hint"></textarea>
+          <p id="idea-hint" class="field-hint">Characters, setting, mood — as much detail as you like.</p>
+          <button type="submit" class="button primary">Send idea <span aria-hidden="true">↗</span></button>
+        </form>
+      </div>
     </div>
   </div>
-</NoRainLayout>
-
-<style>
-  .logo {
-    filter: drop-shadow(0 0 0.75rem rgba(255, 255, 0, 0.3));
+</BaseLayout>
+<script>
+  const returnInput = document.getElementById('form-return') as HTMLInputElement | null;
+  if (returnInput) returnInput.value = new URL('/submit?submitted=1', window.location.origin).href;
+  if (new URLSearchParams(window.location.search).get('submitted') === '1') {
+    document.getElementById('submission-success')?.removeAttribute('hidden');
   }
-</style>
+</script>
