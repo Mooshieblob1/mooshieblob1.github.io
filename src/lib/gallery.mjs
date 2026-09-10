@@ -1,5 +1,5 @@
 import { mediaSource } from './media.mjs';
-export const GALLERY_ENDPOINT = '/api/images';
+export const GALLERY_ENDPOINT = '/api/images?rating=g';
 const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif']);
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const dimension = value => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
@@ -18,7 +18,7 @@ const uniqueUrls = values => [...new Set(values.map(imageUrl).filter(Boolean))];
 
 // AIbooru's optional variants are not ordered or guaranteed to have four entries.
 export function normalizePost(post) {
-  if (!isRecord(post) || !Number.isSafeInteger(Number(post.id)) || Number(post.id) <= 0 || post.is_deleted === true) return null;
+  if (!isRecord(post) || post.rating !== 'g' || !Number.isSafeInteger(Number(post.id)) || Number(post.id) <= 0 || post.is_deleted === true) return null;
   const asset = isRecord(post.media_asset) ? post.media_asset : {};
   const variants = (Array.isArray(asset.variants) ? asset.variants : [])
     .filter(v => isRecord(v) && imageUrl(v.url) && (!v.file_ext || imageExtensions.has(String(v.file_ext).toLowerCase())))
@@ -41,13 +41,14 @@ export function normalizePost(post) {
 export function normalizeGallery(payload) {
   const posts = Array.isArray(payload) ? payload : isRecord(payload) && Array.isArray(payload.posts) ? payload.posts : isRecord(payload) && Array.isArray(payload.data) ? payload.data : null;
   if (!posts) throw new Error('The gallery returned an unexpected response.');
+  const safePosts = posts.filter(post => isRecord(post) && post.rating === 'g');
   const seen = new Set();
-  const images = posts.map(normalizePost).filter(image => {
+  const images = safePosts.map(normalizePost).filter(image => {
     if (!image || seen.has(image.id)) return false;
     seen.add(image.id);
     return true;
   });
-  if (posts.length && !images.length) throw new Error('The gallery did not return any viewable images.');
+  if (safePosts.length && !images.length) throw new Error('The gallery did not return any viewable images.');
   return images;
 }
 

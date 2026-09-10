@@ -10,7 +10,7 @@ const request = (suffix = path, options) => new Request(`https://blob.example/ap
 const png = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0AAAAABJRU5ErkJggg==', 'base64'));
 
 test('all thumbnail and modal candidates use same-origin media delivery', () => {
-  const post = normalizePost({ id: 176191, file_url: `${origin}/original/b9/a3/${hash}.png`,
+  const post = normalizePost({ id: 176191, rating: 'g', file_url: `${origin}/original/b9/a3/${hash}.png`,
     large_file_url: `${origin}/sample/b9/a3/sample-${hash}.jpg`,
     media_asset: { variants: [{ type: '720x720', width: 720, url: origin + path }] } });
   assert.equal(post.thumbnailUrls[0], '/api/media' + path);

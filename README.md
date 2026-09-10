@@ -17,7 +17,7 @@ The site uses normal page links and short cross-document transitions where suppo
 
 The previous gallery depended on a separately deployed Worker that currently returns Cloudflare error 1042 (`workers_dev_script_not_found`). It also assumed media variants always existed at indices 1 and 3.
 
-The gallery now requests `/api/images` on the site's own origin. `server/gallery-api.mjs` fetches the public AIbooru posts API with the `blob_(artist)` tag, found in the original gallery URLs, and a limit of 100. The fixed query cannot be overridden by visitors. Successful responses may be cached for five minutes; unavailable, invalid, and timed-out responses remain uncached and show a retry state.
+The gallery requests `/api/images?rating=g` on the site's own origin. `server/gallery-api.mjs` fetches the public AIbooru posts API with `blob_(artist) rating:g` and a limit of 100. Only General (`g`) posts are returned or displayed; Sensitive (`s`), Questionable (`q`), Explicit (`e`), and missing or unknown ratings are excluded by both the server and client. The fixed query cannot be overridden by visitors. Successful responses may be cached for five minutes under a General-only cache key; unavailable, invalid, and timed-out responses remain uncached and show a retry state.
 
 `src/lib/gallery.mjs` validates the response, removes invalid/deleted/duplicate records, accepts legacy top-level image URLs, and selects optional media variants by size and type. Both thumbnails and full-size images fall back through available URLs. The native dialog supports focus management, arrow-key navigation, and Escape.
 
