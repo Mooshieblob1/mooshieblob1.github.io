@@ -21,6 +21,8 @@ The gallery now requests `/api/images` on the site's own origin. `server/gallery
 
 `src/lib/gallery.mjs` validates the response, removes invalid/deleted/duplicate records, accepts legacy top-level image URLs, and selects optional media variants by size and type. Both thumbnails and full-size images fall back through available URLs. The native dialog supports focus management, arrow-key navigation, and Escape.
 
+CDN thumbnail and original URLs are served through `/api/media/...` on this site's origin. The Worker accepts only AIbooru's fixed CDN and content-addressed raster paths, does not follow redirects or forward visitor credentials, and checks image signatures before serving or caching a response. HTML error pages remain uncached errors instead of reaching an image element. Verified files stream through with the correct image content type and can be cached for a day.
+
 Live upstream API and CDN availability still depends on AIbooru. Tests use fixtures and controlled HTTP responses; they do not imply a successful live upstream check.
 
 ## Development
@@ -41,4 +43,4 @@ pnpm preview   # Serve the built Worker and API locally
 
 Cloudflare Pages can continue building with `pnpm build` and output directory `dist`. The Worker and gallery endpoint ship together, so no separate `workers.dev` deployment is required. Plain GitHub Pages cannot run the API.
 
-Security headers are applied by the Worker from `public/_headers`, with a CSP meta fallback. The gallery uses same-origin requests and referrer-free image loading. No API keys are needed for public posts. FormSubmit remains the request-form provider; it has not been replaced or submitted during development.
+Security headers are applied by the Worker from `public/_headers`, with a CSP meta fallback. Both policies allow Cloudflare's existing analytics beacon script; analytics reporting stays on the same origin. The gallery uses same-origin feed and CDN image requests. No API keys are needed for public posts. FormSubmit remains the request-form provider; it has not been replaced or submitted during development.

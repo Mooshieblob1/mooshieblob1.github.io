@@ -1,3 +1,4 @@
+import { mediaSource } from './media.mjs';
 export const GALLERY_ENDPOINT = '/api/images';
 const imageExtensions = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif']);
 const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -10,7 +11,7 @@ function imageUrl(value) {
     if (!['https:', 'http:'].includes(url.protocol)) return null;
     url.protocol = 'https:';
     if (['mp4', 'webm', 'zip', 'swf'].includes(url.pathname.split('.').pop()?.toLowerCase())) return null;
-    return url.href;
+    return mediaSource(url) ? url.href : null;
   } catch { return null; }
 }
 const uniqueUrls = values => [...new Set(values.map(imageUrl).filter(Boolean))];
@@ -34,7 +35,7 @@ export function normalizePost(post) {
   const tags = typeof post.tag_string === 'string' ? post.tag_string : '';
   const characters = typeof post.tag_string_character === 'string' ? post.tag_string_character : '';
   const caption = (characters || tags).split(' ').filter(Boolean).slice(0, 8).join(', ').replaceAll('_', ' ');
-  return { id: Number(post.id), width, height, thumbnailUrls, fullUrls, alt: caption || `AIbooru image ${post.id}`, postUrl: `https://aibooru.online/posts/${Number(post.id)}` };
+  return { id: Number(post.id), width, height, thumbnailUrls: thumbnailUrls.map(url => mediaSource(new URL(url))), fullUrls: fullUrls.map(url => mediaSource(new URL(url))), alt: caption || `AIbooru image ${post.id}`, postUrl: `https://aibooru.online/posts/${Number(post.id)}` };
 }
 
 export function normalizeGallery(payload) {
