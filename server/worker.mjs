@@ -1,4 +1,5 @@
 import { handleGalleryRequest } from './gallery-api.mjs';
+import { handleMediaRequest } from './media-api.mjs';
 
 export function createWorker(assets, securityHeaders = {}) {
   return {
@@ -6,6 +7,9 @@ export function createWorker(assets, securityHeaders = {}) {
       const url = new URL(request.url);
       if (url.pathname === '/api/images' || url.pathname === '/api/images/') {
         return handleGalleryRequest(request, { cache: globalThis.caches?.default, context });
+      }
+      if (url.pathname.startsWith('/api/media/')) {
+        return handleMediaRequest(request, { cache: globalThis.caches?.default, context });
       }
       if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405, headers: { Allow: 'GET, HEAD' } });
       let path;
