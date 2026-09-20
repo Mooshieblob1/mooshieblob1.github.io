@@ -34,7 +34,7 @@ const links = [{ href: '/', label: 'Profile' }, { href: '/images', label: 'Image
       <nav class="main-nav" aria-label="Main navigation">
         {links.map(link => <a href={link.href} aria-current={path === link.href ? 'page' : undefined}>{link.label}</a>)}
       </nav>
-      <a class="header-project" href="https://mooshieui.mooshieblob.com" target="_blank" rel="noopener noreferrer">MooshieUI <span aria-hidden="true">↗</span></a>
+      <a class="header-project" href="https://mooshieui.com" target="_blank" rel="noopener noreferrer">MooshieUI <span aria-hidden="true">↗</span></a>
     </header>
     <main id="main-content"><slot /></main>
     <footer class="site-footer shell">
