@@ -6,7 +6,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <div class="submit-grid">
       <div class="submit-intro"><p class="eyebrow">YOUR IDEA, MY NEXT EXPERIMENT</p><h1>Something<br />on your <span class="yellow">mind?</span></h1><p class="page-intro">A character, a scene, or a wonderfully specific idea.<br />Send an image request my way.</p><div class="submit-mascot"><img src="/assets/images/raingirl.webp" alt="Ratgirl mascot waiting to hear your idea" width="1248" height="1856" /><span aria-hidden="true">I’m listening.</span></div></div>
       <div class="request-panel">
-        <h2>Leave an idea.</h2><p class="form-description">Tell me what you’d like to see.</p>
+        <aside class="issues-notice" aria-labelledby="issues-notice-title">
+          <p class="eyebrow">USING MOOSHIEUI?</p>
+          <h2 id="issues-notice-title">Please send MooshieUI feedback to GitHub.</h2>
+          <p>Bugs, feature requests and any other feedback about MooshieUI should go in as a GitHub issue, not through this form. I have no way to reply to form messages, so I can't give you an estimate or even let you know I've seen it. On GitHub I can answer, ask follow-up questions and keep you posted.</p>
+          <a class="button primary" href="https://github.com/Mooshieblob1/MooshieUI/issues/new/choose" target="_blank" rel="noopener noreferrer">Open a MooshieUI issue <span aria-hidden="true">↗</span></a>
+          <a class="text-link" href="https://github.com/Mooshieblob1/MooshieUI/issues" target="_blank" rel="noopener noreferrer">See existing issues <span aria-hidden="true">↗</span></a>
+        </aside>
+        <h2>Leave an idea.</h2><p class="form-description">Tell me what image you’d like to see.</p>
         <div id="submission-success" class="success-message" role="status" hidden>Thanks for sharing your idea.</div>
         <form action="https://formsubmit.co/blob@mooshieblob.com" method="POST" data-astro-reload>
           <input type="text" name="_honey" class="honeypot" aria-hidden="true" tabindex="-1" autocomplete="off" />
